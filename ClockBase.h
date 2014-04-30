@@ -7,26 +7,31 @@
 
 #include <SmartMatrix.h>
 
-extern void SetFromCompilerTime(int offset);
+// set function
+extern void SetFromCompilerTime(int offset = 0);
+extern void SerialPrintTime();
 
+// This class will define the interface for how clocks will
+//     be populated and displayed.
 class ClockBase
 {
  public:
   ClockBase();
   virtual ~ClockBase() {}
-  
+
   friend void SetFromCompiledTime(int offset);
-  
+
+  // function that does all the work of drawing to the screen
   virtual void display(SmartMatrix *matrix) = 0;
-  
-  bool update(); // returns true if the time has changed
+
+  // returns true if the time has changed and it is time to display
+  virtual bool update();
   
   void serialPrint();
-	
+
  protected:
  
   // Flag for 24 or 12 hour time
-  
   
   void getHour(char*);   // expects char[3]
   void getMinute(char*); // expects char[3]

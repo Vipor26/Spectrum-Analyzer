@@ -17,13 +17,14 @@
 
 // TODO:
 // analogRead(38) - temperature of teensy?
+// the temperature of the crystal will influence time accuracy by
+// –0.035 ppm/°C × (T – T0) ±10% where T0 is T0 = 25°C ±5°C
+// http://www.ti.com/lit/an/slaa322b/slaa322b.pdf
 
 // ######################## Includes ########################
 // Include audio
 #include <input_adc.h>
 #include <analyze_fft256.h>
-#include <memory>
-//#include <vector>
 
 // Include Screen
 #include <SmartMatrix.h>
@@ -31,12 +32,28 @@
 // Include definsions for 128 colors in HSV H = 360/128*i
 #include "HSV_Color.h" 
 
-#include "ClockBase.h"
+// The following are the includes for the clock base class, and all the
+//    diffrent derivations (derived) classes for displaying a clock
+#include "ClockBase.h" // Base Class
 #include "BasicClock.h"
+#include "FullClock.h"
+
+// The following are the includes for the fft display base class, and all the
+//    diffrent affects that can be placed on top of eachother.
+#include "FFT_DisplayBase.h" // Base Class
+
+// The following are the includes for the fft remapp base class, these classes
+//    map the input data onto the display for the display classes
+#include "FFT_RemapperBase.h" // Base Class
+
+// System includes
+#include <memory> // shared pointers !!
+#include <vector> // easy array
+#include <initializer_list> // look at the blink initalizer :)
 
 // ######################## System Defines ########################
 // 3 dec doubling in energy 1 is lowest
-// 
+// every octive is a doubling in frequency
 
 //---- Display ----
 SmartMatrix matrix;
@@ -51,33 +68,55 @@ AudioInputAnalog   audioInput(17,DEFAULT);  // Pin 17 = A3, Default = 0-3.3v
 
 AudioConnection Connection(audioInput, myFFT);
 
-//---- Time ----
-std::shared_ptr<ClockBase> CurrentClock = std::make_shared<BasicClock>();
-//std::shared_ptr<ClockBase> CurrentEqualizer = std::make_shared<BasicEqualizer>();
+//---- Time & Display ----
+uint8_t CurrentClock = 1;
+std::vector<std::shared_ptr<ClockBase>> Clocks = {NULL,NULL}; //way to get arround initalization problems
+
+//---- Equalizer Display
+std::vector<std::shared_ptr<FFT_DisplayBase>> CurrentEqualizerSceen;
 
 
 //---- Status Led ----
-const int ledPin = 13;              // LED connected to digital pin 13
-bool ledState = false;
-unsigned long ledPreviusStateChange = 0;
-const unsigned long ledOnInterval = 100;           // (milliseconds)
-const unsigned long ledOffInterval = 1000;         // (milliseconds)
-
-
+class BlinkPattern
+{
+ public:
+  BlinkPattern(std::initializer_list<uint16_t> list, uint16_t Ledpin) :
+    delayVector(list),
+    ledpin(Ledpin),
+    lastTime(millis()),
+    flag(true),
+    index(0)
+  {
+    pinMode(ledpin, OUTPUT);
+    digitalWrite(ledpin, flag);
+  }
+  
+  void update(const unsigned long &time)
+  {
+    //if last time + delay is in the past, time to update
+    if( delayVector[ index ] + lastTime <= time )
+    {
+      lastTime = time;
+      flag = !flag;
+      index = (index+1) % delayVector.size();
+      
+      digitalWrite(ledpin, flag);
+    }
+  }
+  
+ private:
+  bool flag;
+  uint16_t index;
+  const uint16_t ledpin;
+  unsigned long lastTime;
+  std::vector<uint16_t> delayVector;
+} BlinkStatus({1000,1000,100,1000},13);
 
 //  ######################## System set up ########################
-void setup() {
-
-  SetFromCompilerTime(5);
-  
+void setup()
+{ 
   // ---- Set up audio ----
   AudioMemory(12);
-  
-
-  // ---- Set up the led ----
-  pinMode(ledPin, OUTPUT);      // sets the digital pin as output
-  digitalWrite(ledPin, true);
-  ledState = true;
 
   // ---- Set up the screen with a little test sequence ----
   rgb24 RED   = {255,0,0};
@@ -88,6 +127,7 @@ void setup() {
   matrix.setBrightness(DefaultBrightness);
   //matrix.setScrollOffsetFromEdge(defaultScrollOffset);
   matrix.setColorCorrection(cc24);
+  //audioInput.begin(A4,DEFAULT);
   
   matrix.fillScreen(RED);       //
   matrix.swapBuffers();         // swap buffers
@@ -104,22 +144,195 @@ void setup() {
   matrix.fillScreen(BLACK);
   matrix.swapBuffers();
   
+  
+  // ---- Set up the serial debug ----
   // CTRL SHIFT M
-  Serial.begin(9600);
+  Serial.begin(115200);
+  delay(1000);
   Serial.println("System Initalized");
-  //audioInput.begin(A4,DEFAULT);
+
+  // ---- Set the clock ----
+  //  Based on when this was compiled.
+  SetFromCompilerTime(5 + 3*INT_SCREEN_DELAY); //takes 5 seconds to compile +3 to run to this point
+  //  Print what the current time is
+  SerialPrintTime();
+  
+  // ---- Set up clocks
+  Clocks[0] = std::make_shared<BasicClock>();
+  Clocks[1] = std::make_shared<FullClock>();
+  
+  // ---- Set up scence builder ----
+  // ????
+  
+
 }
 
 //  ########################## Main Loop ##########################
 
+//  ---- Function prototypes ----
 void updateLED();
-void updateDisplay();
+void updateClock();
+void updateEqualizer();
+double RMS();
+
+// ---- Logic global declerations ----
 
 
-bool signalOutLock = true;
-double lock = 1200;
-unsigned long onHyst, offHyst;
+class TimeHysteresis
+{
+ public:
+  TimeHysteresis(bool DefaultState, unsigned int trueTime, unsigned int FalseTime, double Threshold) :
+    state(DefaultState),
+    trueTime(trueTime),
+    falseTime(FalseTime),
+    threshold(Threshold),
+    sum(0),
+    lastTime(millis())
+  {
+  }
+  
+  bool test(const double &value,const unsigned long &time)
+  {
+    bool testState = (value >= threshold);
+    
+    unsigned long deltaTime = time - lastTime;
+    lastTime = time;
+    
+    // if currently true but false was the result of test
+    if(       state && !testState)
+    {
+      sum -= deltaTime;
+    }
+    // if currently false but true was the result of test
+    else if( !state && testState )
+    {
+      sum += deltaTime;
+    }
+    else // they agree
+    {
+      return state;
+    }
+    
+    if(        sum > trueTime)
+    {
+      sum = 0;
+      state = true;
+    }
+    else if(-1*sum > falseTime)
+    {
+      sum = 0;
+      state = false;
+    }
+    
+    return state;
+  }
+  
+ private:
+  unsigned int trueTime, falseTime;
+  double threshold;
+  unsigned long lastTime;
+  long sum;
+  bool state;
+};
 
+
+// peram 0 - default to the clock on starting.
+// peram 1 - time the signal needs to be stable on
+// peram 2 - time the signal needs to be stable off
+// peram 3 - threshold value
+//TimeHysteresis(bool DefaultState, unsigned int trueTime, unsigned int FalseTime, double Threshold)
+TimeHysteresis HysteState(false, 15000, 1000, 1200.0f);
+
+unsigned long everySecond;
+
+
+class AprroxTimer
+{
+ public:
+  AprroxTimer(uint16_t Seconds) :
+    offset(Seconds),
+    lastTime(millis())
+  {  }
+ 
+  bool hit(const unsigned int &time)
+  {
+    return ( lastTime + offset <= time );
+  }
+ 
+  unsigned int diffms(const unsigned int &time) const
+  {
+    // This if case should never happen
+    if(lastTime < time)  {
+      return (time - lastTime);
+    }
+    return (lastTime - time);
+  }
+ 
+  void reset(const unsigned int &time)
+  {
+    lastTime = time;
+  }
+  
+ private:
+  unsigned int lastTime;
+  const uint16_t offset;
+};
+
+
+
+AprroxTimer ReportFrameRate(10000); // every 10 seconds
+uint16_t FrameCount = 0;
+
+void loop()
+{
+  unsigned int timeStamp = millis();
+  
+  // Update the led on the teensy
+  BlinkStatus.update(timeStamp);
+  
+  if (myFFT.available())
+  {
+    // Lock at the total signal comming into 
+    double rms = RMS();
+ 
+    if( HysteState.test(rms,timeStamp) )
+    {
+      updateEqualizer();
+    }
+    else
+    {
+      updateClock();
+    }
+    
+    // Report the frame rate
+    if(ReportFrameRate.hit(timeStamp))
+    {
+      unsigned int SecondCount = ReportFrameRate.diffms(timeStamp)/1000;
+      Serial.print("  FFT Rate: ");
+      if(SecondCount == 0)
+      {
+        Serial.print("0 ... weird this usally suggests extreamly fast/slow?");
+      }
+      else
+      {
+        Serial.print( (double)FrameCount/SecondCount);
+      }
+      Serial.println(" fps");
+      
+      SecondCount = 0;
+      FrameCount = 0;
+      ReportFrameRate.reset(timeStamp);
+    }
+    else
+    {
+      ++FrameCount;
+    }
+  }
+}
+        
+//  ################## Main Loop Support Functions ###################
+
+// ---- Function that calculates the RMS ERROR based on the FFT ----
 double RMS()
 {
   int index=0, temp;
@@ -132,138 +345,33 @@ double RMS()
   return sqrt((double)val);
 }
 
-
-
-unsigned long everySecond;
-
-
-void loop()
+void updateClock()
 {
-  updateLED();
+  if( CurrentClock >= Clocks.size() ) return;
+  if( Clocks[CurrentClock] == NULL) return;
   
-  if (myFFT.available())
-  {
-    double rms = RMS();
-    
-    
-    
-    // if there is signal && currently set to off
-    if(signalOutLock &&  (rms > lock))
-    {
-      // if this is the first time, since last on state change
-      if(offHyst == 0)  {
-        Serial.println("Maybe a Signal?"); 
-        offHyst = millis();
-        onHyst = 0;
-      }
-      else if(offHyst + 250 < millis()) // set hyreses for off
-      {
-        onHyst = 0;
-        signalOutLock = false;
-        Serial.println("Turning on"); 
-      }
-    }
-    if(!signalOutLock && (rms < lock))
-    {
-      if(onHyst == 0)  {
-        Serial.println("Maybe off?"); 
-        onHyst = millis();
-        offHyst = 0;
-      }
-      else if(onHyst + 15000 < millis())
-      {
-        offHyst = 0;
-        signalOutLock = true;
-        Serial.println("Turning off");
-      }
-    }
-    
-    if(signalOutLock)
-    {
-      if(everySecond + 1000 < millis())
-      {
-        everySecond = millis();
-        
-        matrix.fillScreen(BLACK);
-        
-        CurrentClock->display(&matrix);
-        matrix.swapBuffers(true);
-      }
-    }
-    else
-    {
-      updateDisplay();
-    }
-  } 
+  Clocks[CurrentClock]->display(&matrix);
 }
 
-
-
-void updateLED()
-{
-  unsigned long currentTimeMs = millis();
-  unsigned long ledInterval;
+void updateEqualizer()
+{  
+  matrix.fillScreen(BLACK);
   
-  if(ledState)  {
-    ledInterval = ledOffInterval;
-  }
-  else  {
-    ledInterval = ledOnInterval;
-  }
-  
-  if( currentTimeMs - ledPreviusStateChange > ledInterval )
+  uint16_t *FFT_Data = myFFT.output;
+  for(uint8_t index=0; index<CurrentEqualizerSceen.size(); ++index)
   {
-    ledPreviusStateChange = currentTimeMs;
-  
-    digitalWrite(ledPin, ledState);
-    ledState = !ledState;
+    CurrentEqualizerSceen[index]->display(FFT_Data, &matrix);
   }
+  
+  matrix.swapBuffers(true);
 }
 
-
+/*
 const int BinMod = 128/MATRIX_WIDTH;
 
-void displayOne();
-void displayTwo();
-void printStats();
-
-
-
-
-
-void updateDisplay()
-{
-  
-    matrix.fillScreen(BLACK);
-    
     //printStats();
     displayOne();
     //displayTwo();
-
-    
-    matrix.swapBuffers(true);
-}
-
-void printStats()
-{
-  int dc = audioInput.getDC();
-  int low = audioInput.getLow();
-  int high = audioInput.getHigh();
-  Serial.print("DC: [(");
-  Serial.print(low);
-  Serial.print(")=");
-  Serial.print( (low)/(65535.0)*3.3 );
-  Serial.print(", (");
-  Serial.print(dc);
-  Serial.print(")=");
-  Serial.print( (dc)/(65535.0)*3.3 );
-  Serial.print(", (");
-  Serial.print(high);
-  Serial.print(")=");
-  Serial.print( (high)/(65535.0)*3.3 );
-  Serial.print("] ");
-}
-
 
 int8_t octiveBiasIndex[128] = {1,2,3,3,4,4,4,4,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8};
 //float  octiveBiasValue[8] = {0.125,0.25,0.5,1,2,4,8,16};
@@ -310,7 +418,8 @@ void displayOne()
   }
 }
    
-
+    */
+/*
 void displayTwo()
 {
   const int Window = 128/32;
@@ -349,17 +458,17 @@ void displayTwo()
     tempMatrix[X] += log(myFFT.output[i]+1);
     count[X]++;
     
-    /*
-    sum += (int)(VertScale*myFFT.output[i]);
     
-    if((i+1)%BinMod == 0)
-    {
-      tempMatrix[X] = log( (float)sum/BinMod + 1);
-      
-      X++;
-      sum = 0;
-    }
-    */
+    //sum += (int)(VertScale*myFFT.output[i]);
+    
+    //if((i+1)%BinMod == 0)
+    //{
+    //  tempMatrix[X] = log( (float)sum/BinMod + 1);
+    //  
+    //  X++;
+    //  sum = 0;
+    //}
+    
   }
   
   for(i=0; i<matrix.getScreenWidth(); ++i)
@@ -436,4 +545,6 @@ void displayTwo()
     }
     
   }
-}
+}*/
+
+

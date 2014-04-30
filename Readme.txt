@@ -9,19 +9,32 @@ Spectrum analyzer
 Clock, why not
 All supporting code
 
+Code is much simpler then it looks, polymorphism might have been overly used in this project.
+
+Spectrum_Analyzer (main)
+ = FFT_Remapper (base class)
+
+ = FFT_DisplayBase (base class) inherited by all classes that display to the screen.
+ 
+ = ClockBase (base class)
+ -   BasicClock just displays the hour and minutes
+ -   FullClock Shows day, time, and date.
+
 
 Motivation - make code extremely simple to add on, would be nice for community to contribute back.
 
 
 TODO:
- - Finish rewriting the code into its nice little compartments (files)
- - Fix clock
+ - Add Night sleep mode
+ - Fix clock - is being initialized to the correct, reports the correct time but displays 2:XX ?
+ - Move Teensy clock code back into its own library again.
+ - keywords file?
  - Fix FFT, window?
  - Build prototype, and stop using hack job
- - Menu items for remote interface
+ - !! Menu items for remote interface
  - Have way for classes to report their parameters to the menu system.
  - Finish rewrite of adc.h to read stereo instead of using mix circuit. 
 
 
 Done
- - . . .
+ - Finish code rewrite.

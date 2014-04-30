@@ -11,16 +11,10 @@ long int getTeensy3Time()
 ClockBase::ClockBase() : useAmPm(false)
 {
   // set the Time library to use Teensy 3.0's RTC to keep time
-  //setSyncProvider(getTeensy3Time);
   setSyncProvider(getTeensy3Time);
   // now that the time library knows how to talk to the RTC clock, update it.
   time = now();
 }
-
-
-// ---- Clock function definitions ---
-
-
 
 void ClockBase::getHour(char *timeStr)
 {
@@ -83,7 +77,7 @@ void SetFromCompilerTime(int offset)
 {
   // Just in case this is called before a time object has been instatiated
   // set the Time library to use Teensy 3.0's RTC to keep time
-  //setSyncProvider(getTeensy3Time);
+  setSyncProvider(getTeensy3Time);
     
   const char time[] = __TIME__; //"hh:mm:ss"
   const char date[] = __DATE__; //"Mmm dd yyyy"
@@ -130,3 +124,18 @@ void SetFromCompilerTime(int offset)
           tempTime.Year  );
 }
 
+void SerialPrintTime()
+{
+  time_t tempTime = now();
+  Serial.print(hour(tempTime));
+  Serial.print(":");
+  Serial.print(minute(tempTime));
+  Serial.print(":");
+  Serial.print(second(tempTime));
+  Serial.print(" ");
+  Serial.print(month(tempTime));
+  Serial.print("/");
+  Serial.print(day(tempTime));
+  Serial.print(" ");
+  Serial.print(year(tempTime));
+}
