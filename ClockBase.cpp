@@ -1,4 +1,3 @@
-
 #include "ClockBase.h"
 
 extern time_t now();

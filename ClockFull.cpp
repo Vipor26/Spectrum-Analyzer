@@ -1,10 +1,10 @@
-#include "FullClock.h"
+#include "ClockFull.h"
 
-FullClock::FullClock() : ClockBase()
+ClockFull::ClockFull() : ClockBase()
 {
 }
 
-void FullClock::display(SmartMatrix *matrix)
+void ClockFull::display(SmartMatrix *matrix)
 {
   char temp[10], *part;
 

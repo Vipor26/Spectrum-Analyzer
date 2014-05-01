@@ -6,7 +6,9 @@
 class RemapDecibel : public RemapBase
 {
  public:
-  void remap(DataBlock *data, uint8_t *dataSize);
+ 
+  void remap(Data data[], uint8_t *dataSize);
+  
  private:
   
 };

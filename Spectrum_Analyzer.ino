@@ -35,21 +35,24 @@
 // The following are the includes for the clock base class, and all the
 //    diffrent derivations (derived) classes for displaying a clock
 #include "ClockBase.h" // Base Class
-#include "BasicClock.h"
-#include "FullClock.h"
+#include "ClockBasic.h"
+#include "ClockFull.h"
 
 // The following are the includes for the fft display base class, and all the
 //    diffrent affects that can be placed on top of eachother.
-#include "FFT_DisplayBase.h" // Base Class
+#include "DisplayBase.h" // Base Class
 
 // The following are the includes for the fft remapp base class, these classes
 //    map the input data onto the display for the display classes
-#include "FFT_RemapperBase.h" // Base Class
+#include "RemapBase.h" // Base Class
+
+#include "BlinkPatternManager.h"
+#include "TimeHysteresis.h"
+#include "AprroxTimer.h"
 
 // System includes
 #include <memory> // shared pointers !!
 #include <vector> // easy array
-#include <initializer_list> // look at the blink initalizer :)
 
 // ######################## System Defines ########################
 // 3 dec doubling in energy 1 is lowest
@@ -73,44 +76,11 @@ uint8_t CurrentClock = 1;
 std::vector<std::shared_ptr<ClockBase>> Clocks = {NULL,NULL}; //way to get arround initalization problems
 
 //---- Equalizer Display
-std::vector<std::shared_ptr<FFT_DisplayBase>> CurrentEqualizerSceen;
+//std::vector<std::shared_ptr<FFT_DisplayBase>> CurrentEqualizerScreen;
 
-
-//---- Status Led ----
-class BlinkPattern
-{
- public:
-  BlinkPattern(std::initializer_list<uint16_t> list, uint16_t Ledpin) :
-    delayVector(list),
-    ledpin(Ledpin),
-    lastTime(millis()),
-    flag(true),
-    index(0)
-  {
-    pinMode(ledpin, OUTPUT);
-    digitalWrite(ledpin, flag);
-  }
-  
-  void update(const unsigned long &time)
-  {
-    //if last time + delay is in the past, time to update
-    if( delayVector[ index ] + lastTime <= time )
-    {
-      lastTime = time;
-      flag = !flag;
-      index = (index+1) % delayVector.size();
-      
-      digitalWrite(ledpin, flag);
-    }
-  }
-  
- private:
-  bool flag;
-  uint16_t index;
-  const uint16_t ledpin;
-  unsigned long lastTime;
-  std::vector<uint16_t> delayVector;
-} BlinkStatus({1000,1000,100,1000},13);
+// ---- Status Led ----;
+BlinkPatternManager blinker({1000,1000,100,500},13);
+// Pattern on pin 13 - off(1s), on(1s), off(0.1), on(0,5)
 
 //  ######################## System set up ########################
 void setup()
@@ -158,8 +128,8 @@ void setup()
   SerialPrintTime();
   
   // ---- Set up clocks
-  Clocks[0] = std::make_shared<BasicClock>();
-  Clocks[1] = std::make_shared<FullClock>();
+  Clocks[0] = std::make_shared<ClockBasic>();
+  Clocks[1] = std::make_shared<ClockFull>();
   
   // ---- Set up scence builder ----
   // ????
@@ -177,108 +147,12 @@ double RMS();
 
 // ---- Logic global declerations ----
 
-
-class TimeHysteresis
-{
- public:
-  TimeHysteresis(bool DefaultState, unsigned int trueTime, unsigned int FalseTime, double Threshold) :
-    state(DefaultState),
-    trueTime(trueTime),
-    falseTime(FalseTime),
-    threshold(Threshold),
-    sum(0),
-    lastTime(millis())
-  {
-  }
-  
-  bool test(const double &value,const unsigned long &time)
-  {
-    bool testState = (value >= threshold);
-    
-    unsigned long deltaTime = time - lastTime;
-    lastTime = time;
-    
-    // if currently true but false was the result of test
-    if(       state && !testState)
-    {
-      sum -= deltaTime;
-    }
-    // if currently false but true was the result of test
-    else if( !state && testState )
-    {
-      sum += deltaTime;
-    }
-    else // they agree
-    {
-      return state;
-    }
-    
-    if(        sum > trueTime)
-    {
-      sum = 0;
-      state = true;
-    }
-    else if(-1*sum > falseTime)
-    {
-      sum = 0;
-      state = false;
-    }
-    
-    return state;
-  }
-  
- private:
-  unsigned int trueTime, falseTime;
-  double threshold;
-  unsigned long lastTime;
-  long sum;
-  bool state;
-};
-
-
 // peram 0 - default to the clock on starting.
 // peram 1 - time the signal needs to be stable on
 // peram 2 - time the signal needs to be stable off
 // peram 3 - threshold value
 //TimeHysteresis(bool DefaultState, unsigned int trueTime, unsigned int FalseTime, double Threshold)
 TimeHysteresis HysteState(false, 15000, 1000, 1200.0f);
-
-unsigned long everySecond;
-
-
-class AprroxTimer
-{
- public:
-  AprroxTimer(uint16_t Seconds) :
-    offset(Seconds),
-    lastTime(millis())
-  {  }
- 
-  bool hit(const unsigned int &time)
-  {
-    return ( lastTime + offset <= time );
-  }
- 
-  unsigned int diffms(const unsigned int &time) const
-  {
-    // This if case should never happen
-    if(lastTime < time)  {
-      return (time - lastTime);
-    }
-    return (lastTime - time);
-  }
- 
-  void reset(const unsigned int &time)
-  {
-    lastTime = time;
-  }
-  
- private:
-  unsigned int lastTime;
-  const uint16_t offset;
-};
-
-
 
 AprroxTimer ReportFrameRate(10000); // every 10 seconds
 uint16_t FrameCount = 0;
@@ -288,7 +162,7 @@ void loop()
   unsigned int timeStamp = millis();
   
   // Update the led on the teensy
-  BlinkStatus.update(timeStamp);
+  blinker.update(timeStamp);
   
   if (myFFT.available())
   {
@@ -358,10 +232,10 @@ void updateEqualizer()
   matrix.fillScreen(BLACK);
   
   uint16_t *FFT_Data = myFFT.output;
-  for(uint8_t index=0; index<CurrentEqualizerSceen.size(); ++index)
-  {
-    CurrentEqualizerSceen[index]->display(FFT_Data, &matrix);
-  }
+  //for(uint8_t index=0; index<CurrentEqualizerSceen.size(); ++index)
+  //{
+  //  CurrentEqualizerSceen[index]->display(FFT_Data, &matrix);
+  //}
   
   matrix.swapBuffers(true);
 }

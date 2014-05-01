@@ -1,9 +1,9 @@
 #include "ClockBase.h"
 
-class BasicClock : public ClockBase
+class ClockBasic : public ClockBase
 {
  public:
-  BasicClock();
+  ClockBasic();
   void display(SmartMatrix *matrix);
  private:
 };

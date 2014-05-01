@@ -1,10 +1,10 @@
-#include "BasicClock.h"
+#include "ClockBasic.h"
 
-BasicClock::BasicClock() : ClockBase()
+ClockBasic::ClockBasic() : ClockBase()
 {
 }
 
-void BasicClock::display(SmartMatrix *matrix)
+void ClockBasic::display(SmartMatrix *matrix)
 {
   char temp[3];
 

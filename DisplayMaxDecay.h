@@ -1,9 +1,9 @@
-#include "SpectrumDisplayBase.h"
+#include "DisplayBase.h"
 
-class MaxDecayDisplay : public SpectrumDisplayBase
+class DisplayMaxDecay : public DisplayBase
 {
  public:
-  MaxDecayDisplay();
+  DisplayMaxDecay();
   
   void setDecayFunction();
   void setPainter();

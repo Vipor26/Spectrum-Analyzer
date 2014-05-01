@@ -1,5 +1,5 @@
 #include "Remapdecibel.h"
 
-void Remapdecibe::remap(DataBlock *data, uint8_t *dataSize)
+void RemapDecibel::remap(Data data[], uint8_t *dataSize)
 {
 }

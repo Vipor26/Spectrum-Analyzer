@@ -1,5 +1,5 @@
 #include "RemapOctave.h"
 
-void RemapOctave:remap(DataBlock *data, uint8_t *dataSize)
+void RemapOctave::remap(Data data[], uint8_t *dataSize)
 {
 }

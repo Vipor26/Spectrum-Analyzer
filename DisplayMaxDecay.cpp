@@ -1,6 +1,6 @@
-#include "MaxDecayDisplay.h"
+#include "DisplayMaxDecay.h"
 
-MaxDecayDisplay::MaxDecayDisplay()
+DisplayMaxDecay::DisplayMaxDecay()
 {
   for(uint8_t index=0; index<128; ++index)
   {
@@ -8,14 +8,30 @@ MaxDecayDisplay::MaxDecayDisplay()
   }
 }
 
-void MaxDecayDisplay::setDecayFunction()
+void DisplayMaxDecay::setDecayFunction()
 {
 }
 
-void MaxDecayDisplay::setPainter()
+void DisplayMaxDecay::setPainter()
 {
 }
   
-void MaxDecayDisplay::display(uint16_t &output, SmartMatrix *matrix)
+void DisplayMaxDecay::display(uint16_t &output, SmartMatrix *matrix)
 {
+  uint8_t index;
+  //First set decay on max's
+  for(index=0; index<128; ++index)
+  {
+  }
+  
+  //Second do max text
+  for(index=0; index<128; ++index)
+  {
+  }
+  
+  //Third and finally display
+  for(index=0; index<128; ++index)
+  {
+  }
+  
 }

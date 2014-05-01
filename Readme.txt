@@ -12,13 +12,16 @@ All supporting code
 Code is much simpler then it looks, polymorphism might have been overly used in this project.
 
 Spectrum_Analyzer (main)
- = FFT_Remapper (base class)
+ = RemapBase (base class)
+ -   RemapDecibel remaps amplitude data by the log approximately.
+ -   RemapOctave remaps the x axis into a frequency doubling approximately. 
+ -   RemapLinear scales the data.
 
- = FFT_DisplayBase (base class) inherited by all classes that display to the screen.
+ = DisplayBase (base class) inherited by all classes that display to the screen.
  
  = ClockBase (base class)
- -   BasicClock just displays the hour and minutes
- -   FullClock Shows day, time, and date.
+ -   ClockBasic just displays the hour and minutes
+ -   ClockFull Shows day, time, and date.
 
 
 Motivation - make code extremely simple to add on, would be nice for community to contribute back.

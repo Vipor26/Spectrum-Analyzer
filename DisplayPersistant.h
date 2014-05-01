@@ -2,7 +2,7 @@
 #define PERSISTANT_DISPLAY_H
 
 #include "CircularBufferCT.h"
-#include "FFT_DisplayBase.h"
+#include "DisplayBase.h"
 #include <memory>
 
 #ifndef defined(PERSISTANT_BUFFER_SIZE)
@@ -25,10 +25,10 @@ class DecayFunciton
 };
 
 // ---- Decay function that mimics gravity ----
-class GravityDecay : public DecayFunciton
+class DecayGravity : public DecayFunciton
 {
  public:
-  GravityDecay(double Gravity, double TimeScale);
+  DecayGravity(double Gravity, double TimeScale);
   
   void apply(uint16_t &data, uint16_t time);
   
@@ -37,35 +37,30 @@ class GravityDecay : public DecayFunciton
 };
 
 // ---- Fade function ----
-class GravityDecay : public DecayFunciton
+class DecayFade : public DecayFunciton
 {
  public:
-  GravityDecay(double Gravity, double TimeScale);
+  DecayFade(double fadeConst);
   
   void apply(uint16_t &data, uint16_t time);
   
  private:
-  double gravity, timeScale;
+  double FadeConst;
 };
 
 
 //==== Define Persistant display ====
-class PersistantDisplay : public FFT_DisplayBase
+class DisplayPersistant : public DisplayBase
 {
  public:
-  void setFadeFunction(std::shared_ptr<DecayFunction> &DecayFunction);
+  void setFadeFunction(std::shared_ptr<DecayFunciton> &decayFunction);
   //void setPainter();
   void display(uint16_t *FFT_Data, SmartMatrix *matrix);
 
  private:
   // want to make this clean so opted for a pound define instead of template
   CircularBuffer<uint16_t,PERSISTANT_BUFFER_SIZE> buffers[128];
-  std::shared_ptr<DecayFunction> *decayFunction;
+  std::shared_ptr<DecayFunciton> m_decayFunction;
 };
 
 #endif
-
-void PersistantDisplay::setFadeFunction(std::shared_ptr<DecayFunction> &DecayFunction)
-{
-  decayFunction = DecayFunction;
-}

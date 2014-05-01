@@ -1,11 +1,11 @@
 #include <SmartMatrix.h>
 #include "Arduino.h"
 
-class FFT_DisplayBase
+class DisplayBase
 {
  public:
-  FFT_DisplayBase();
-  virtual ~FFT_DisplayBase();
+  DisplayBase();
+  virtual ~DisplayBase();
   
   virtual void display(uint16_t *FFT_Data, SmartMatrix *matrix) = 0;
   
