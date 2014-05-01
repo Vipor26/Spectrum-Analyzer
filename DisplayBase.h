@@ -1,4 +1,5 @@
 #include <SmartMatrix.h>
+#include "Arduino.h"
 
 class FFT_DisplayBase
 {

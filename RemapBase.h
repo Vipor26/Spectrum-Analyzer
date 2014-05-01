@@ -7,27 +7,17 @@
 
 class DataBlock
 {
- public:
-  //DataBlock(uint16_t numberPoints);
-  //DataBlock(const DataBlock &rhs);
-  //~DataBlock();
-  
-  
- private:
-  
-  uint16_t *XData;
-  uint16_t *YData;
+  uint16_t XData;
+  uint16_t YData;
 };
 
-class FFT_RemapperBase
+class RemapBase
 {
  public:
   FFT_RemapperBase();
-  virtual ~FFT_RemapperBase();
+  virtual ~FFT_RemapperBase() {}
   
-  //virtual 
+  virtual void remap(DataBlock *data, uint8_t *dataSize) = 0;
   
  private:
-  uint16_t *XData;
-  uint16_t *YData;
 };

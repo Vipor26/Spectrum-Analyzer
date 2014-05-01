@@ -1,43 +1,71 @@
-/*
-#include "CircularBufferCT.hpp"
+#ifndef PERSISTANT_DISPLAY_H
+#define PERSISTANT_DISPLAY_H
 
+#include "CircularBufferCT.h"
+#include "FFT_DisplayBase.h"
+#include <memory>
+
+#ifndef defined(PERSISTANT_BUFFER_SIZE)
+#define PERSISTANT_BUFFER_SIZE 4
+#endif
+
+struct PersistantPointData
+{
+  uint8_t X, Y;
+  rgb24 color;
+};
+
+// ===== Define Max decay finctions ====
+// ----- Decay function base ----
 class DecayFunciton
 {
-	virtual void apply(uint16_t&,int16_t position) = 0;
+ public:
+  // if false is returned all the points after this in the queue are dropped
+  virtual bool apply( uint16_t &X, uint16_t &Y, uint16_t position) = 0;
 };
 
+// ---- Decay function that mimics gravity ----
 class GravityDecay : public DecayFunciton
 {
-	void apply(uint16_t &data, int16_t time)
-	{
-		data = 0.5*Gravity*time*time;
-	}
+ public:
+  GravityDecay(double Gravity, double TimeScale);
+  
+  void apply(uint16_t &data, uint16_t time);
+  
+ private:
+  double gravity, timeScale;
+};
+
+// ---- Fade function ----
+class GravityDecay : public DecayFunciton
+{
+ public:
+  GravityDecay(double Gravity, double TimeScale);
+  
+  void apply(uint16_t &data, uint16_t time);
+  
+ private:
+  double gravity, timeScale;
 };
 
 
-template<unsigned int bufferSize>
-class PersistantDisplay
+//==== Define Persistant display ====
+class PersistantDisplay : public FFT_DisplayBase
 {
-public
-	void setFadeFunction();
-	void ProcessData(uint16_t *input);
+ public:
+  void setFadeFunction(std::shared_ptr<DecayFunction> &DecayFunction);
+  //void setPainter();
+  void display(uint16_t *FFT_Data, SmartMatrix *matrix);
 
-private:
-	CircularBuffer<int16_t,bufferSize> buffers[128];
-	DecayFunction *decayFunction;
+ private:
+  // want to make this clean so opted for a pound define instead of template
+  CircularBuffer<uint16_t,PERSISTANT_BUFFER_SIZE> buffers[128];
+  std::shared_ptr<DecayFunction> *decayFunction;
 };
 
-template<unsigned int BufferSize>
-PersistantDisplay::ProcessData(uint16_t *input)
+#endif
+
+void PersistantDisplay::setFadeFunction(std::shared_ptr<DecayFunction> &DecayFunction)
 {
-	unsigned int index, bufIndex, bufSize;
-	for(index=0; index<128; +index)
-	{
-		bufSize = buffers[index].size();
-		for(bufIndex=0; bufIndex<bufSize; ++bufIndex)
-		{
-			decayFunction(buffers[index][bufIndex],bufIndex);
-		}
-		
-	}
-}*/
+  decayFunction = DecayFunction;
+}

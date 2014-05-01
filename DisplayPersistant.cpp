@@ -1,41 +1,27 @@
-/*
-class DecayFunciton
+#include "PersistantDisplay.h"
+
+// ---- Decay function that mimics gravity ----
+GravityDecay::GravityDecay(double Gravity, double TimeScale):
+  timeScale(TimeScale),
+  gravity(Gravity)
+{  }
+
+void GravityDecay::apply(uint16_t &data, uint16_t time)
 {
-	virtual void apply(uint16_t&,int16_t position) = 0;
-};
+  const double t = (timeScale*time);
+  data = 0.5*gravity*t*t;
+}
 
-class GravityDecay : public DecayFunciton
+//==== Define Persistant display ====
+void PersistantDisplay::display(uint16_t *FFT_Data, SmartMatrix *matrix)
 {
-	void apply(uint16_t &data, int16_t time)
-	{
-		data = 0.5*Gravity*time*time;
-	}
-};
-
-
-template<unsigned int bufferSize>
-class PersistantDisplay
-{
-public
-	void setFadeFunction();
-	void ProcessData(uint16_t *input);
-
-private:
-	CircularBuffer<int16_t,bufferSize> buffers[128];
-	DecayFunction *decayFunction;
-};
-
-template<unsigned int BufferSize>
-PersistantDisplay::ProcessData(uint16_t *input)
-{
-	unsigned int index, bufIndex, bufSize;
-	for(index=0; index<128; +index)
-	{
-		bufSize = buffers[index].size();
-		for(bufIndex=0; bufIndex<bufSize; ++bufIndex)
-		{
-			decayFunction(buffers[index][bufIndex],bufIndex);
-		}
-		
-	}
-}*/
+  uint8_t index, bufIndex, bufSize;
+  for(index=0; index<128; +index)
+  {
+    bufSize = buffers[index].size();
+    for(bufIndex=0; bufIndex<bufSize; ++bufIndex)
+    {
+      decayFunction(buffers[index][bufIndex],bufIndex);
+    }
+  }
+}

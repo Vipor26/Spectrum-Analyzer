@@ -1,3 +1,5 @@
+#include "SmartMatrix.h"
+
 class SpectrumDisplayBase
 {
  public:
