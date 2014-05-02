@@ -127,7 +127,7 @@ LogRemap({ 0, 1, 2, 3, 4, 5, 6, 7,
             30,30,30,30,30,31,31,31,
             31,31,31,31,31,31,31} */
 
-RemapOctave::RemapOctave(uint8_t ReMapTo, OctaveCompression comp): m_dataptr(NULL), m_size(0), compression(comp)
+RemapOctave::RemapOctave(uint8_t ReMapTo, Compression::Type comp): m_dataptr(NULL), m_size(0), Compression(comp)
  {
    switch(ReMapTo)
    {
@@ -147,81 +147,11 @@ void RemapOctave::remap(DataBuffer &data)
 {
   if( (m_dataptr == NULL) || (m_size == 0) ) return;
   
-  uint8_t indexTo, start, stop;
+  uint8_t indexTo;
   
   for(indexTo=0; indexTo<m_size; indexTo+=2)
   {
-    start = m_dataptr[ indexTo     ];
-    stop  = m_dataptr[ indexTo + 1 ];
-    
-    switch(compression)
-    {
-      case OctaveAverage: useAverage(start, stop, indexTo, data); break;
-      case OctaveAll:         useAll(start, stop, indexTo, data); break;
-      case OctaveMax:         useMax(start, stop, indexTo, data); break;
-    }
+    applyComp(m_dataptr[ indexTo ], m_dataptr[ indexTo + 1 ], indexTo/2, data);
   }
   data.size = m_size;
-}
-
-void RemapOctave::useAverage(const uint8_t &start,
-                          const uint8_t &stop,
-                          const uint8_t &where,
-                          DataBuffer &data)
-{
-  uint8_t indexFrom;
-  rgb24 color;
-  uint16_t count = (uint16_t)stop + 1 - start;
-  uint16_t Rsum = 0, Bsum = 0, Gsum = 0;
-  unsigned long sum = 0;
-  for(indexFrom=start; indexFrom<=stop; ++indexFrom)
-  {
-    sum += data.data[indexFrom].Y;
-    color = data.data[indexFrom].C;
-    Rsum += color.red;
-    Gsum += color.green;
-    Bsum += color.blue;
-  }
-  data.data[where].X = where;
-  data.data[where].Y = (uint16_t)(sum/count);
-  color.red   = (uint8_t)(Rsum/count);
-  color.green = (uint8_t)(Gsum/count);
-  color.blue  = (uint8_t)(Bsum/count);
-}
-                
-void RemapOctave::useAll(const uint8_t &start,
-                      const uint8_t &stop,
-                      const uint8_t &where,
-                      DataBuffer &data)
-{
-  uint8_t indexFrom;
-  for(indexFrom=start; indexFrom<=stop; ++indexFrom)
-  {
-    // Just reassign the X axis
-    data.data[indexFrom].X = where;
-  }
-}
-
-void RemapOctave::useMax(const uint8_t &start,
-                      const uint8_t &stop,
-                      const uint8_t &where,
-                      DataBuffer &data)
-{
-  uint8_t indexFrom;
-  uint16_t max, temp;
-  rgb24 maxcolor = {0x00,0x00,0x00};
-  
-  max = 0;
-  for(indexFrom=start; indexFrom<=stop; ++indexFrom)
-  {
-    temp = data.data[indexFrom].Y;
-    if(temp > max)  {
-      max = temp;
-      maxcolor = data.data[indexFrom].C;
-    }
-  }
-  
-  data.data[where].X = where;
-  data.data[where].Y = max;
-  data.data[where].C = maxcolor;
 }
