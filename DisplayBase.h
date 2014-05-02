@@ -13,8 +13,9 @@ class DisplayBase
   virtual ~DisplayBase();
   
   virtual void display(DataBuffer &data, SmartMatrix *matrix) = 0;
-  
- private:
+ 
+ protected:
+  // X axis combiners
 };
 
-#endif DISPLAY_BASE_H
+#endif // DISPLAY_BASE_H

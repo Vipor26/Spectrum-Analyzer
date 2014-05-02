@@ -34,30 +34,34 @@
 
 // The following are the includes for the clock base class, and all the
 //    diffrent derivations (derived) classes for displaying a clock
-#include "ClockBase.h" // Base Class
-#include "ClockBasic.h"
-#include "ClockFull.h"
+#include "ClockBase.h"  // Base Class
+#include "ClockBasic.h" // Shows HH:MM
+#include "ClockFull.h"  // Shows the day, time, and date, but in a basic white small text.
+
+// The following are the includes for the fft remapp base class, these classes
+//    map the input data onto the display for the display classes
+#include "RemapBase.h"    // Base Class
+#include "RemapLinear.h"  // Remap the X or Y axis
+#include "RemapDecibel.h" // Remap the Y axis to logorithmic scale
+#include "RemapOctave.h"  // Remap the X axis to an approximate doubling of frequency each bin.
 
 // The following are the includes for the fft display base class, and all the
 //    diffrent affects that can be placed on top of eachother.
 #include "DisplayBase.h" // Base Class
+#include "DisplayRaw.h"  // Just display what is viewable in the array nothing fancy.
+#include "DisplayMaxDecay.h"   //Shows the max Y in a column and decays it in some way.
+#define PERSISTANT_BUFFER_SIZE 4 //Defines the number of pixels to save per column in the DispayPersistant class.
+#include "DisplayPersistant.h" //Shows a history of pixels that are decaying in some way.
 
-// The following are the includes for the fft remapp base class, these classes
-//    map the input data onto the display for the display classes
-#include "RemapBase.h" // Base Class
-#include "RemapLinear.h"
-#include "RemapDecibel.h"
-#include "RemapOctave.h"
+#include "SpectrumDisplay.h" // Class to mannage a equalizer screen, or setup.
 
-#include "SpectrumDisplay.h"
-
-#include "BlinkPatternManager.h"
-#include "TimeHysteresis.h"
-#include "AprroxTimer.h"
+#include "BlinkPatternManager.h" // Just blinks the status led
+#include "TimeHysteresis.h"      // Class to solve the noisy input signal
+#include "AprroxTimer.h"         // Just a simple timer that is used to spit out diag. info
 
 // System includes
-#include <memory> // shared pointers !!
-#include <vector> // easy array
+#include <memory> // shared pointers!
+#include <vector> // easy array, with size maybe should just use a templated struct { dt data[MaxSize]; size_t size; }?
 
 // ######################## System Defines ########################
 // 3 dec doubling in energy 1 is lowest
@@ -105,19 +109,19 @@ void setup()
   matrix.setColorCorrection(cc24);
   //audioInput.begin(A4,DEFAULT);
   
-  matrix.fillScreen(RED);       //
+  matrix.fillScreen( RED );       //
   matrix.swapBuffers();         // swap buffers
   delay(INT_SCREEN_DELAY);                  // waits for a second
   
-  matrix.fillScreen(GREEN);
+  matrix.fillScreen( GREEN );
   matrix.swapBuffers();
   delay(INT_SCREEN_DELAY);                  // waits for a second
   
-  matrix.fillScreen(BLUE);
+  matrix.fillScreen( BLUE );
   matrix.swapBuffers();
   delay(INT_SCREEN_DELAY);                  // waits for a second
   
-  matrix.fillScreen(BLACK);
+  matrix.fillScreen( BLACK );
   matrix.swapBuffers();
   
   

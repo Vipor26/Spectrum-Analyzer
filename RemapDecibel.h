@@ -9,8 +9,6 @@ class RemapDecibel : public RemapBase
  
   void remap(DataBuffer &data);
   
- private:
-  uint8_t m_size;
 };
 
 #endif

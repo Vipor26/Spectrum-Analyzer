@@ -12,7 +12,7 @@ All supporting code
 Code is much simpler then it looks, polymorphism might have been overly used in this project.
 
 Spectrum_Analyzer (main)
- = RemapBase (base class)
+ = RemapBase (base class) (all remappers ignore FFT_output.data[0] because this is the dc component of the signal)
  -   RemapDecibel remaps amplitude data by the log approximately.
  -   RemapOctave remaps the x axis into a frequency doubling approximately. 
  -   RemapLinear scales the data.

@@ -169,14 +169,23 @@ void RemapOctave::useAverage(const uint8_t &start,
                           DataBuffer &data)
 {
   uint8_t indexFrom;
-  unsigned long count = (uint16_t)stop + 1 - start;
+  rgb24 color;
+  uint16_t count = (uint16_t)stop + 1 - start;
+  uint16_t Rsum = 0, Bsum = 0, Gsum = 0;
   unsigned long sum = 0;
   for(indexFrom=start; indexFrom<=stop; ++indexFrom)
   {
     sum += data.data[indexFrom].Y;
+    color = data.data[indexFrom].C;
+    Rsum += color.red;
+    Gsum += color.green;
+    Bsum += color.blue;
   }
   data.data[where].X = where;
   data.data[where].Y = (uint16_t)(sum/count);
+  color.red   = (uint8_t)(Rsum/count);
+  color.green = (uint8_t)(Gsum/count);
+  color.blue  = (uint8_t)(Bsum/count);
 }
                 
 void RemapOctave::useAll(const uint8_t &start,
@@ -187,8 +196,8 @@ void RemapOctave::useAll(const uint8_t &start,
   uint8_t indexFrom;
   for(indexFrom=start; indexFrom<=stop; ++indexFrom)
   {
+    // Just reassign the X axis
     data.data[indexFrom].X = where;
-    //data.data[where].Y
   }
 }
 
@@ -199,6 +208,7 @@ void RemapOctave::useMax(const uint8_t &start,
 {
   uint8_t indexFrom;
   uint16_t max, temp;
+  rgb24 maxcolor = {0x00,0x00,0x00};
   
   max = 0;
   for(indexFrom=start; indexFrom<=stop; ++indexFrom)
@@ -206,9 +216,11 @@ void RemapOctave::useMax(const uint8_t &start,
     temp = data.data[indexFrom].Y;
     if(temp > max)  {
       max = temp;
+      maxcolor = data.data[indexFrom].C;
     }
   }
   
   data.data[where].X = where;
   data.data[where].Y = max;
+  data.data[where].C = maxcolor;
 }

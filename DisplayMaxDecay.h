@@ -1,4 +1,5 @@
 #include "DisplayBase.h"
+#include "DecayClasses.h"
 
 class DisplayMaxDecay : public DisplayBase
 {
