@@ -10,6 +10,7 @@ void ClockFull::display(SmartMatrix *matrix)
 
   if(update())
   {
+    matrix->setRotation(rotation0);
     matrix->fillScreen({0x00,0x00,0x00});
     
     matrix->setFont(font3x5); //3x5 5x7 6x10 8x13

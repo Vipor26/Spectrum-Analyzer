@@ -7,7 +7,7 @@ class RemapLinear : public RemapBase
 {
  public:
  
-  void remap(Data data[], uint8_t *dataSize);
+  void remap(DataBuffer &data);
  
  private:
 };

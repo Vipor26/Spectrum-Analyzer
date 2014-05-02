@@ -7,11 +7,18 @@
 #include "arduino.h"
 #include "SmartMatrix.h"
 
-class Data
+struct Data
 {
   uint16_t X;
   uint16_t Y;
   rgb24 C;
+};
+
+
+struct DataBuffer
+{
+  Data data[128];
+  uint8_t size;
 };
 
 class RemapBase
@@ -20,7 +27,7 @@ class RemapBase
   RemapBase();
   virtual ~RemapBase() {}
   
-  virtual void remap(Data data[], uint8_t *dataSize) = 0;
+  virtual void remap(DataBuffer &data) = 0;
   
  private:
 };

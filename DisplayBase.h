@@ -1,5 +1,10 @@
+#ifndef DISPLAY_BASE_H
+#define DISPLAY_BASE_H
+
 #include <SmartMatrix.h>
 #include "Arduino.h"
+
+#include "RemapBase.h"
 
 class DisplayBase
 {
@@ -7,7 +12,9 @@ class DisplayBase
   DisplayBase();
   virtual ~DisplayBase();
   
-  virtual void display(uint16_t *FFT_Data, SmartMatrix *matrix) = 0;
+  virtual void display(DataBuffer &data, SmartMatrix *matrix) = 0;
   
  private:
 };
+
+#endif DISPLAY_BASE_H

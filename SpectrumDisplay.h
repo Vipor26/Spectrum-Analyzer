@@ -1,11 +1,24 @@
 #include "SmartMatrix.h"
 
-class SpectrumDisplayBase
+#include <vector>
+#include <memory>
+
+#include "RemapBase.h"
+#include "DisplayBase.h"
+
+class SpectrumDisplay
 {
  public:
-  virtual ~SpectrumDisplayBase() {}
+  void registerRemappers(std::vector<std::shared_ptr<RemapBase>> Remappers)
+  { m_remappers = Remappers; }
   
-  // output is expected to be [128] from the fft
-  virtual void display(uint16_t &output, SmartMatrix *matrix) = 0;
+  void registerDisplayers(std::vector<std::shared_ptr<DisplayBase>> Displayers)
+  { m_displayers = Displayers; }
   
+  
+  void display(DataBuffer &data, SmartMatrix *matrix);
+  
+ private:
+  std::vector<std::shared_ptr<RemapBase>> m_remappers;
+  std::vector<std::shared_ptr<DisplayBase>> m_displayers;
 };

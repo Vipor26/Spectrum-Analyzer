@@ -12,6 +12,7 @@ void ClockBasic::display(SmartMatrix *matrix)
   {
     temp[0] = '0';
     
+    matrix->setRotation(rotation0);
     matrix->fillScreen({0x00,0x00,0x00});
     
     matrix->fillRoundRectangle(0,

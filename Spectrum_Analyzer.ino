@@ -45,6 +45,11 @@
 // The following are the includes for the fft remapp base class, these classes
 //    map the input data onto the display for the display classes
 #include "RemapBase.h" // Base Class
+#include "RemapLinear.h"
+#include "RemapDecibel.h"
+#include "RemapOctave.h"
+
+#include "SpectrumDisplay.h"
 
 #include "BlinkPatternManager.h"
 #include "TimeHysteresis.h"
@@ -62,7 +67,7 @@
 SmartMatrix matrix;
 const int INT_SCREEN_DELAY = 1000;
 const int DefaultBrightness = 25*(255/100);
-rgb24 BLACK = {0,0,0};
+const rgb24 BLACK = {0,0,0};
 
 
 //---- Audio  ----
@@ -72,11 +77,12 @@ AudioInputAnalog   audioInput(17,DEFAULT);  // Pin 17 = A3, Default = 0-3.3v
 AudioConnection Connection(audioInput, myFFT);
 
 //---- Time & Display ----
-uint8_t CurrentClock = 1;
+uint8_t CurrentClock = 0;
 std::vector<std::shared_ptr<ClockBase>> Clocks = {NULL,NULL}; //way to get arround initalization problems
 
 //---- Equalizer Display
-//std::vector<std::shared_ptr<FFT_DisplayBase>> CurrentEqualizerScreen;
+uint8_t CurrentEqualizer = 0;
+std::vector<std::shared_ptr<SpectrumDisplay>> CurrentEqualizerScreen = {NULL};
 
 // ---- Status Led ----;
 BlinkPatternManager blinker({1000,1000,100,500},13);
@@ -132,7 +138,9 @@ void setup()
   Clocks[1] = std::make_shared<ClockFull>();
   
   // ---- Set up scence builder ----
-  // ????
+  CurrentEqualizerScreen[0] = std::make_shared<SpectrumDisplay>();
+  
+  
   
 
 }
@@ -227,18 +235,26 @@ void updateClock()
   Clocks[CurrentClock]->display(&matrix);
 }
 
+DataBuffer EqualizerBuffer;
+
 void updateEqualizer()
-{  
-  matrix.fillScreen(BLACK);
+{
   
-  uint16_t *FFT_Data = myFFT.output;
-  //for(uint8_t index=0; index<CurrentEqualizerSceen.size(); ++index)
-  //{
-  //  CurrentEqualizerSceen[index]->display(FFT_Data, &matrix);
-  //}
+  if( CurrentEqualizer >= CurrentEqualizerScreen.size() ) return;
+  if( CurrentEqualizerScreen[CurrentEqualizer] == NULL) return;
   
-  matrix.swapBuffers(true);
+  uint8_t index;
+  for(index=0; index<128; ++index)
+  {
+    EqualizerBuffer.data[index].X = index;
+    EqualizerBuffer.data[index].Y = myFFT.output[index];
+  }
+  EqualizerBuffer.size = 128;
+  
+  CurrentEqualizerScreen[CurrentEqualizer]->display(EqualizerBuffer,&matrix);
 }
+
+
 
 /*
 const int BinMod = 128/MATRIX_WIDTH;
@@ -251,7 +267,7 @@ int8_t octiveBiasIndex[128] = {1,2,3,3,4,4,4,4,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6
 //float  octiveBiasValue[8] = {0.125,0.25,0.5,1,2,4,8,16};
 float  octiveBiasValue[8] = {0.0625, 0.125, 0.25, 0.5, 0.375, 0.75, 1.5, 3};
 
-int8_t LogRemap[128] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,15,16,16,17,17,18,18,18,19,19,19,20,20,21,21,21,22,22,22,22,23,23,23,23,23,24,24,24,24,24,24,25,25,25,25,25,25,25,26,26,26,26,26,26,26,26,27,27,27,27,27,27,27,27,27,27,27,28,28,28,28,28,28,28,28,28,28,28,28,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,31,31,31,31,31,31,31,31,31,31};
+
 
 
 int16_t flipMatrix(const int16_t &y)

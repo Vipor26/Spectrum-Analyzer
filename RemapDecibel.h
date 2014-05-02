@@ -7,10 +7,10 @@ class RemapDecibel : public RemapBase
 {
  public:
  
-  void remap(Data data[], uint8_t *dataSize);
+  void remap(DataBuffer &data);
   
  private:
-  
+  uint8_t m_size;
 };
 
 #endif

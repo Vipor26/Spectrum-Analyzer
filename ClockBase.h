@@ -39,6 +39,9 @@ class ClockBase
   //void getMonth(char[2]);
   //void DisplayDay();
  
+ // this flag is only accessable to derived classes because
+ //    it might be the case that dirived classes may not support
+ //    both formats
   bool useAmPm;
   time_t time;
   

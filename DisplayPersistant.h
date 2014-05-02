@@ -55,7 +55,7 @@ class DisplayPersistant : public DisplayBase
  public:
   void setFadeFunction(std::shared_ptr<DecayFunciton> &decayFunction);
   //void setPainter();
-  void display(uint16_t *FFT_Data, SmartMatrix *matrix);
+  void display(DataBuffer &data, SmartMatrix *matrix);
 
  private:
   // want to make this clean so opted for a pound define instead of template
