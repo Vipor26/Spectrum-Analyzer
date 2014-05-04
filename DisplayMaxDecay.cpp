@@ -6,6 +6,16 @@ DisplayMaxDecay::DisplayMaxDecay()
   {
   }
 }
+
+DisplayMaxDecay::DisplayMaxDecay(const DisplayMaxDecay &rhs)
+{
+  
+}
+  
+DisplayMaxDecay::~DisplayMaxDecay()
+{
+  
+}
   
 void DisplayMaxDecay::display(DataBuffer &data, SmartMatrix *matrix)
 {

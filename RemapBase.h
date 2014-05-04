@@ -24,7 +24,7 @@ struct DataBuffer
 class RemapBase
 {
  public:
-  RemapBase();
+  //virtual RemapBase( const RemapBase& ) {} ??
   virtual ~RemapBase() {}
   
   virtual void remap(DataBuffer &data) = 0;

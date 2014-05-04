@@ -6,10 +6,10 @@ DecayGravity::DecayGravity(double Gravity, double TimeScale):
   gravity(Gravity)
 {  }
 
-void DecayGravity::apply(uint16_t &data, uint16_t time)
+void DecayGravity::apply(Data &data, uint16_t time)
 {
   const double t = (timeScale*time);
-  data = 0.5*gravity*t*t;
+  data.Y = 0.5*gravity*t*t;
 }
 
 // ---- Fade function ----
@@ -18,7 +18,7 @@ DecayFade::DecayFade(double fadeConst)
   
 }
   
-void DecayFade::apply(uint16_t &data, uint16_t time)
+void DecayFade::apply(Data &data, uint16_t time)
 {
   
 }

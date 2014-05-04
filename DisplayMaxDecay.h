@@ -5,9 +5,10 @@ class DisplayMaxDecay : public DisplayBase
 {
  public:
   DisplayMaxDecay();
+  DisplayMaxDecay(const DisplayMaxDecay &rhs);
+  ~DisplayMaxDecay();
   
   void setDecayFunction();
-  void setPainter();
   
   void display(DataBuffer &data, SmartMatrix *matrix);
 

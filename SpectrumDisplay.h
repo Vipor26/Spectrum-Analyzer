@@ -1,7 +1,8 @@
 #include "SmartMatrix.h"
 
-#include <vector>
-#include <memory>
+// System includes
+#include "ArraySharedPtr.h"
+
 
 #include "RemapBase.h"
 #include "DisplayBase.h"
@@ -9,16 +10,24 @@
 class SpectrumDisplay
 {
  public:
-  void registerRemappers(std::vector<std::shared_ptr<RemapBase>> Remappers)
-  { m_remappers = Remappers; }
+ 
+  //template<typename DerivcedType>
+  void registerRemappers( ArraySharedPtr<RemapBase> Remappers)
+  {
+    // void deepCopy( const ArraySharedPtr<BDT> &to, const ArraySharedPtr<BDT> &from)
+    m_remappers = Remappers;
+  }
   
-  void registerDisplayers(std::vector<std::shared_ptr<DisplayBase>> Displayers)
-  { m_displayers = Displayers; }
-  
+  void registerDisplayers( ArraySharedPtr<DisplayBase> Displayers)
+  {
+    // void deepCopy( const ArraySharedPtr<BDT> &to, const ArraySharedPtr<BDT> &from)
+    m_displayers = Displayers;
+  }
   
   void display(DataBuffer &data, SmartMatrix *matrix);
   
  private:
-  std::vector<std::shared_ptr<RemapBase>> m_remappers;
-  std::vector<std::shared_ptr<DisplayBase>> m_displayers;
+  // I know this is weird but it should look clean in the end
+  ArraySharedPtr< RemapBase > m_remappers;
+  ArraySharedPtr<DisplayBase> m_displayers;
 };

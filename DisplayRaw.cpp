@@ -1,5 +1,14 @@
 #include "DisplayRaw.h"
 
+DisplayRaw::DisplayRaw()
+{  }
+
+DisplayRaw::DisplayRaw(const DisplayRaw &rhs)
+{  }
+
+DisplayRaw::~DisplayRaw()
+{  }
+
 void DisplayRaw::display(DataBuffer &data, SmartMatrix *matrix)
 {
   uint16_t i,s;

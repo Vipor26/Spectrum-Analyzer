@@ -1,6 +1,4 @@
-// 
-
-
+// This project was writen by Brian Hamilton
 
 // =================== SPECIAL THANKS TO ==========================
 
@@ -60,8 +58,7 @@
 #include "AprroxTimer.h"         // Just a simple timer that is used to spit out diag. info
 
 // System includes
-#include <memory> // shared pointers!
-#include <vector> // easy array, with size maybe should just use a templated struct { dt data[MaxSize]; size_t size; }?
+#include "ArraySharedPtr.h"
 
 // ######################## System Defines ########################
 // 3 dec doubling in energy 1 is lowest
@@ -81,12 +78,12 @@ AudioInputAnalog   audioInput(17,DEFAULT);  // Pin 17 = A3, Default = 0-3.3v
 AudioConnection Connection(audioInput, myFFT);
 
 //---- Time & Display ----
-uint8_t CurrentClock = 0;
-std::vector<std::shared_ptr<ClockBase>> Clocks = {NULL,NULL}; //way to get arround initalization problems
+uint8_t CurrentClock = 1;
+ArraySharedPtr<ClockBase> Clocks;
 
 //---- Equalizer Display
 uint8_t CurrentEqualizer = 0;
-std::vector<std::shared_ptr<SpectrumDisplay>> CurrentEqualizerScreen = {NULL};
+ArraySharedPtr<SpectrumDisplay> CurrentEqualizerScreen;
 
 // ---- Status Led ----;
 BlinkPatternManager blinker({1000,1000,100,500},13);
@@ -102,51 +99,101 @@ void setup()
   rgb24 RED   = {255,0,0};
   rgb24 GREEN = {0,255,0};
   rgb24 BLUE  = {0,0,255};
-  
+
   matrix.begin();
   matrix.setBrightness(DefaultBrightness);
   //matrix.setScrollOffsetFromEdge(defaultScrollOffset);
   matrix.setColorCorrection(cc24);
   //audioInput.begin(A4,DEFAULT);
-  
+
   matrix.fillScreen( RED );       //
   matrix.swapBuffers();         // swap buffers
   delay(INT_SCREEN_DELAY);                  // waits for a second
-  
+
   matrix.fillScreen( GREEN );
   matrix.swapBuffers();
   delay(INT_SCREEN_DELAY);                  // waits for a second
-  
+
   matrix.fillScreen( BLUE );
   matrix.swapBuffers();
   delay(INT_SCREEN_DELAY);                  // waits for a second
-  
+
   matrix.fillScreen( BLACK );
   matrix.swapBuffers();
-  
+
   
   // ---- Set up the serial debug ----
   // CTRL SHIFT M
   Serial.begin(115200);
   delay(1000);
-  Serial.println("System Initalized");
+  Serial.println("Screen Initalized");
 
+
+  Serial.println();
+  Serial.println("Initalizing ...");
+  
+  Serial.println("  Time ...");
   // ---- Set the clock ----
   //  Based on when this was compiled.
   SetFromCompilerTime(5 + 3*INT_SCREEN_DELAY); //takes 5 seconds to compile +3 to run to this point
   //  Print what the current time is
+  Serial.print("  - ");
   SerialPrintTime();
-  
-  // ---- Set up clocks
-  Clocks[0] = std::make_shared<ClockBasic>();
-  Clocks[1] = std::make_shared<ClockFull>();
-  
-  // ---- Set up scence builder ----
-  CurrentEqualizerScreen[0] = std::make_shared<SpectrumDisplay>();
-  
-  
+  Serial.println();
+  Serial.println("  - done");
   
 
+  Serial.println("  Clocks ...");
+  // ---- Set up clocks
+  Clocks.initalize( 2 );
+  Clocks[0] = std::make_shared<ClockBasic>();
+  Clocks[1] = std::make_shared<ClockFull>();
+  Serial.println("  - done");
+  Serial.println();
+  
+  Serial.println("  Working on equalizer 1 ...");
+  Serial.println("    Helper ...");
+  // ---- Set up scence builder ----
+  CurrentEqualizerScreen.initalize(1);
+  CurrentEqualizerScreen[0] = std::make_shared<SpectrumDisplay>();
+  Serial.println("    - done");
+  
+  ArraySharedPtr<  RemapBase  > tempRemappers;
+  ArraySharedPtr< DisplayBase > tempDisplayers;
+  
+  
+  Serial.println("    Data Remappers ...");
+  // ---- Set up equalizer (this is the basic verision ----
+  tempRemappers.initalize( 3 );
+  Serial.println("      Octave ...");
+  tempRemappers[0] = std::make_shared<RemapOctave>( matrix.getScreenWidth(), Compression::All );
+  Serial.println("      - done");
+  Serial.println("      Decimal ...");
+  tempRemappers[1] = std::make_shared<RemapDecibel>();
+  Serial.println("      - done");
+  Serial.println("      Linear ...");
+  tempRemappers[2] = std::make_shared< RemapLinear >( RemapLinear::ScaleXY,
+                                                      matrix.getScreenHeight(),
+                                                      matrix.getScreenWidth(),
+                                                       Compression::All          );
+  Serial.println("      - done");
+  Serial.println("      Uploading and clearing temp");  
+  //CurrentEqualizerScreen[0]->registerRemappers(tempRemappers);
+  //tempRemappers.clear();
+  Serial.println("    - done");
+  Serial.println();
+  
+  Serial.println("    Data renders ...");
+  tempDisplayers.initalize(1);
+  Serial.println("      Basic render ...");
+  tempDisplayers[0] = std::make_shared<DisplayRaw>();
+  Serial.println("      - done");
+  Serial.println("      Uploading and clearing temp");  
+  //CurrentEqualizerScreen[0]->registerDisplayers(tempDisplayers);
+  Serial.println("    - done");
+  Serial.println();
+  
+  Serial.println("Initalizing Complete");
 }
 
 //  ########################## Main Loop ##########################
@@ -156,6 +203,7 @@ void updateLED();
 void updateClock();
 void updateEqualizer();
 double RMS();
+void TimeStateChangeNotifier(bool);
 
 // ---- Logic global declerations ----
 
@@ -164,14 +212,18 @@ double RMS();
 // peram 2 - time the signal needs to be stable off
 // peram 3 - threshold value
 //TimeHysteresis(bool DefaultState, unsigned int trueTime, unsigned int FalseTime, double Threshold)
-TimeHysteresis HysteState(false, 15000, 1000, 1200.0f);
+TimeHysteresis HysteState(false, 15000, 1000, 1200.0f, TimeStateChangeNotifier);
 
 AprroxTimer ReportFrameRate(10000); // every 10 seconds
 uint16_t FrameCount = 0;
+long startTime = 0, endTime = 0;
+double RMS_S = 0;
+unsigned long LoopCount = 0;
 
 void loop()
 {
-  unsigned int timeStamp = millis();
+  unsigned int timeStamp = millis(); 
+  ++LoopCount;
   
   // Update the led on the teensy
   blinker.update(timeStamp);
@@ -180,10 +232,10 @@ void loop()
   {
     // Lock at the total signal comming into 
     double rms = RMS();
- 
+    RMS_S += rms;
     if( HysteState.test(rms,timeStamp) )
     {
-      updateEqualizer();
+      //updateEqualizer();
     }
     else
     {
@@ -194,7 +246,7 @@ void loop()
     if(ReportFrameRate.hit(timeStamp))
     {
       unsigned int SecondCount = ReportFrameRate.diffms(timeStamp)/1000;
-      Serial.print("  FFT Rate: ");
+      Serial.print("LoopRate: ");
       if(SecondCount == 0)
       {
         Serial.print("0 ... weird this usally suggests extreamly fast/slow?");
@@ -203,16 +255,39 @@ void loop()
       {
         Serial.print( (double)FrameCount/SecondCount);
       }
-      Serial.println(" fps");
+      Serial.print(" fps ");
+      
+      Serial.print("  Proc On: ");
+      Serial.print((endTime - startTime)/((double)SecondCount*1000));
+      
+      //Serial.print("%, off: ");
+      //Serial.print((startTime - endTime)/((double)SecondCount*1000));
+      
+      Serial.print("% ");
+      
+      Serial.print("Avg RMS: ");
+      Serial.print( RMS_S/((double)FrameCount) );
+      
+      Serial.print(" hit: ");
+      Serial.print( FrameCount/((double)LoopCount) );
+      Serial.print(" %");
+      
+      Serial.println();
       
       SecondCount = 0;
       FrameCount = 0;
+      startTime = 0;
+      endTime = 0;
+      RMS_S = 0;
+      LoopCount = 0;
       ReportFrameRate.reset(timeStamp);
     }
     else
     {
       ++FrameCount;
     }
+    startTime += timeStamp;
+    endTime   += millis();
   }
 }
         
@@ -229,6 +304,18 @@ double RMS()
     val += temp*temp;
   }
   return sqrt((double)val);
+}
+
+void TimeStateChangeNotifier(bool state)
+{
+  if(state)
+  {
+    Serial.println(" -- Equalizer mode --");
+  }
+  else
+  {
+    Serial.println(" -- Clock mode --");
+  }
 }
 
 void updateClock()
@@ -258,9 +345,8 @@ void updateEqualizer()
   CurrentEqualizerScreen[CurrentEqualizer]->display(EqualizerBuffer,&matrix);
 }
 
-
-
 /*
+This was the original experiment code to be removed once the completed system is up and running
 const int BinMod = 128/MATRIX_WIDTH;
 
     //printStats();

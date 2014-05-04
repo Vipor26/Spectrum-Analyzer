@@ -9,11 +9,11 @@
 class DisplayBase
 {
  public:
-  DisplayBase();
-  virtual ~DisplayBase();
+  virtual ~DisplayBase() {}
   
   virtual void display(DataBuffer &data, SmartMatrix *matrix) = 0;
   
+ private:
 };
 
 #endif // DISPLAY_BASE_H

@@ -4,15 +4,15 @@
 class TimeHysteresis
 {
  public:
-  TimeHysteresis(bool DefaultState, unsigned int trueTime, unsigned int FalseTime, double Threshold) :
+  TimeHysteresis(bool DefaultState, unsigned int trueTime, unsigned int FalseTime, double Threshold, void (*NotifiedStateChange)(bool) = NULL) :
     state(DefaultState),
     trueTime(trueTime),
     falseTime(FalseTime),
     threshold(Threshold),
     sum(0),
+    notifiedStateChange(NotifiedStateChange),
     lastTime(millis())
-  {
-  }
+  {  }
   
   bool test(const double &value,const unsigned long &time)
   {
@@ -40,17 +40,26 @@ class TimeHysteresis
     {
       sum = 0;
       state = true;
+      if(notifiedStateChange != NULL)
+      {
+        notifiedStateChange(true);
+      }
     }
     else if(-1*sum > falseTime)
     {
       sum = 0;
       state = false;
+      if(notifiedStateChange != NULL)
+      {
+        notifiedStateChange(false);
+      }
     }
     
     return state;
   }
   
  private:
+  void (*notifiedStateChange)(bool);
   unsigned int trueTime, falseTime;
   double threshold;
   unsigned long lastTime;

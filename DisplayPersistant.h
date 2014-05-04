@@ -14,9 +14,13 @@
 class DisplayPersistant : public DisplayBase
 {
  public:
-  void setFadeFunction(std::shared_ptr<DecayFunciton> &decayFunction);
-  //void setPainter();
-  void display(DataBuffer &data, SmartMatrix *matrix);
+ DisplayPersistant();
+ DisplayPersistant(const DisplayPersistant &rhs);
+ ~DisplayPersistant();
+ 
+ void setFadeFunction(std::shared_ptr<DecayFunciton> &decayFunction);
+ //void setPainter();
+ void display(DataBuffer &data, SmartMatrix *matrix);
 
  private:
   // want to make this clean so opted for a pound define instead of template

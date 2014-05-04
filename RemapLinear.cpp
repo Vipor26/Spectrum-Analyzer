@@ -1,11 +1,24 @@
 #include "RemapLinear.h"
 
-RemapLinear::RemapLinear(LinearMapping type, uint8_t HorzSize, uint8_t VertSize):
+RemapLinear::RemapLinear( LinearMapping type,
+                          uint16_t HorzSize,
+                          uint16_t VertSize,
+                          Compression::Type comp) :
     mapping(type),
     scaleX(0.0),
     scaleY(0.0),
     horzSize(HorzSize),
-    vertSize(VertSize)
+    vertSize(VertSize),
+    Compression(comp)
+{  }
+
+RemapLinear::RemapLinear( const RemapLinear &rhs) :
+    mapping(rhs.mapping),
+    scaleX( rhs.scaleX),
+    scaleY( rhs.scaleY),
+    horzSize(rhs.horzSize),
+    vertSize(rhs.vertSize),
+    Compression(rhs)
 {  }
 
 void RemapLinear::remap(DataBuffer &data)
@@ -18,10 +31,20 @@ void RemapLinear::remap(DataBuffer &data)
   }
 }
 
+
+void RemapLinear::lockHorz(double val)
+{
+  scaleX = val;
+}
   
+void RemapLinear::lockVert(double val)
+{
+  scaleY = val;
+}
+
 void RemapLinear::rescaleX(DataBuffer &data)
 {
-  uint8_t index;
+  uint16_t index, start, end, where, CurrentX, tempX;
   double scale;
   if( scaleX != 0.0 )
   {
@@ -45,7 +68,38 @@ void RemapLinear::rescaleX(DataBuffer &data)
     data.data[index].X *= scale;
   }
   
-  //Combiner?
+  start = 0;
+  end = 0;
+  where = 0;
+  CurrentX = data.data[0].X;
+  for(index=0; index<data.size; ++index)
+  {
+    tempX = data.data[index].X;
+    if(CurrentX == tempX) {
+      continue;
+    }
+    end = index-1;
+    // if this fails then an end was found
+    // index-1
+    
+    //Combiner
+    applyComp(start,
+              end,
+              where,
+              data  ); 
+    start = index;
+    ++where;
+    CurrentX = tempX;
+  }
+  end = data.size-1;
+  if(end > start)
+  {
+    //Combiner
+    applyComp(start,
+              end,
+              where,
+              data  ); 
+  }
 }
 
 void RemapLinear::rescaleY(DataBuffer &data)

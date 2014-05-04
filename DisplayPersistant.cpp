@@ -1,5 +1,20 @@
 #include "DisplayPersistant.h"
 
+
+DisplayPersistant::DisplayPersistant()
+{  }
+
+DisplayPersistant::DisplayPersistant(const DisplayPersistant &rhs) : m_decayFunction(rhs.m_decayFunction)
+{
+  for(uint16_t index=0; index<128; ++index)
+  {
+    buffers[index] = rhs.buffers[index];
+  }
+}
+
+DisplayPersistant::~DisplayPersistant()
+{  }
+
 void DisplayPersistant::setFadeFunction(std::shared_ptr<DecayFunciton> &decayFunction)
 {
   m_decayFunction = decayFunction;

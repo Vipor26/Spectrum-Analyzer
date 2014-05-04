@@ -13,9 +13,19 @@ class Compression
     Max
   };
   
+  enum WhichType
+  {
+    X,
+    Y,
+  };
+  
   Compression(Type type) : m_type(type)
   {  }
   
+  Compression( const Compression &rhs) : m_type(rhs.m_type)
+  {  }
+  
+  // start and stop indexes are included in the calc
   void applyComp( const uint8_t &start,
                   const uint8_t &stop,
                   const uint8_t &where,
