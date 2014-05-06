@@ -1,14 +1,12 @@
 #include "RemapLinear.h"
 
 RemapLinear::RemapLinear( LinearMapping type,
-                          uint16_t HorzSize,
-                          uint16_t VertSize,
+                          MatrixSize ScreenSize,
                           Compression::Type comp) :
     mapping(type),
     scaleX(0.0),
     scaleY(0.0),
-    horzSize(HorzSize),
-    vertSize(VertSize),
+    screenSize(ScreenSize),
     Compression(comp)
 {  }
 
@@ -16,8 +14,7 @@ RemapLinear::RemapLinear( const RemapLinear &rhs) :
     mapping(rhs.mapping),
     scaleX( rhs.scaleX),
     scaleY( rhs.scaleY),
-    horzSize(rhs.horzSize),
-    vertSize(rhs.vertSize),
+    screenSize(rhs.screenSize),
     Compression(rhs)
 {  }
 
@@ -60,7 +57,7 @@ void RemapLinear::rescaleX(DataBuffer &data)
         max = temp;
       }
     }
-    scale = (double)horzSize/max;
+    scale = ((double)(screenSize.width))/max;
   }
   
   for(index=0; index<data.size; ++index)
@@ -106,9 +103,9 @@ void RemapLinear::rescaleY(DataBuffer &data)
 {
   uint8_t index;
   double scale;
-  if( scaleX != 0.0 )
+  if( scaleY != 0.0 )
   {
-    scale = scaleX;
+    scale = scaleY;
   }
   else
   {
@@ -120,11 +117,13 @@ void RemapLinear::rescaleY(DataBuffer &data)
         max = temp;
       }
     }
-    scale = (double)vertSize/max;
+    scale = ((double)screenSize.height)/max;
   }
   
   for(index=0; index<data.size; ++index)
   {
     data.data[index].Y *= scale;
   }
+  
+  //TODO Combiner?
 }

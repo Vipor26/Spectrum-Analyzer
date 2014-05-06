@@ -1,6 +1,7 @@
 #ifndef REMAP_LINEAR_H
 #define REMAP_LINEAR_H
 
+#include "BasicStructures.h"
 #include "RemapBase.h"
 #include "Compression.h"
 
@@ -16,11 +17,12 @@ class RemapLinear : public RemapBase, private Compression
   };
  
   RemapLinear( LinearMapping type, 
-               uint16_t HorzSize,
-               uint16_t VertSize,
+               MatrixSize ScreenSize,
                Compression::Type comp );
                
   RemapLinear( const RemapLinear &rhs);
+  
+  ~RemapLinear() {}
  
   void remap(DataBuffer &data);
  
@@ -30,7 +32,7 @@ class RemapLinear : public RemapBase, private Compression
  private:
   LinearMapping mapping;
   double scaleX, scaleY;
-  uint16_t horzSize, vertSize;
+  MatrixSize screenSize;
   
   void rescaleX(DataBuffer &data);
   void rescaleY(DataBuffer &data);

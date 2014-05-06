@@ -29,6 +29,7 @@ Motivation - make code extremely simple to add on, would be nice for community t
 
 
 TODO:
+ - Find bugs in remappers
  - DisplayMaxDecay
  - Write Combiner to take an axis argument
  - Write Y Axis Combiner into Rempap Liner.y and RemapDecible?
@@ -51,5 +52,6 @@ TODO:
  -     value: the value to write, from 0 to 255 (byte)
  -   byte EEPROM.read(address)
  -   https://learn.adafruit.com/memories-of-an-arduino/measuring-free-memory 
+ 
 Done
  - Finish code rewrite.

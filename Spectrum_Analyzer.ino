@@ -126,7 +126,14 @@ void setup()
   // CTRL SHIFT M
   Serial.begin(115200);
   delay(1000);
+  
+  MatrixSize matrixSize(matrix);
   Serial.println("Screen Initalized");
+  Serial.print("Screen is ");
+  Serial.print(matrixSize.width);
+  Serial.print(" wide by ");
+  Serial.print(matrixSize.height);
+  Serial.println(" tall");  
 
 
   Serial.println();
@@ -169,17 +176,16 @@ void setup()
   tempRemappers[0] = std::make_shared<RemapOctave>( matrix.getScreenWidth(), Compression::All );
   Serial.println("      - done");
   Serial.println("      Decimal ...");
-  tempRemappers[1] = std::make_shared<RemapDecibel>();
+  tempRemappers[1] = std::make_shared<RemapDecibel>(matrixSize);
   Serial.println("      - done");
   Serial.println("      Linear ...");
-  tempRemappers[2] = std::make_shared< RemapLinear >( RemapLinear::ScaleXY,
-                                                      matrix.getScreenHeight(),
-                                                      matrix.getScreenWidth(),
-                                                       Compression::All          );
+  tempRemappers[2] = std::make_shared< RemapLinear >( RemapLinear::ScaleX,
+                                                      matrixSize,
+                                                      Compression::All          );
   Serial.println("      - done");
   Serial.println("      Uploading and clearing temp");  
-  //CurrentEqualizerScreen[0]->registerRemappers(tempRemappers);
-  //tempRemappers.clear();
+  CurrentEqualizerScreen[0]->registerRemappers(tempRemappers);
+  tempRemappers.clear();
   Serial.println("    - done");
   Serial.println();
   
@@ -189,7 +195,8 @@ void setup()
   tempDisplayers[0] = std::make_shared<DisplayRaw>();
   Serial.println("      - done");
   Serial.println("      Uploading and clearing temp");  
-  //CurrentEqualizerScreen[0]->registerDisplayers(tempDisplayers);
+  CurrentEqualizerScreen[0]->registerDisplayers(tempDisplayers);
+  tempDisplayers.clear();
   Serial.println("    - done");
   Serial.println();
   
@@ -212,18 +219,16 @@ void TimeStateChangeNotifier(bool);
 // peram 2 - time the signal needs to be stable off
 // peram 3 - threshold value
 //TimeHysteresis(bool DefaultState, unsigned int trueTime, unsigned int FalseTime, double Threshold)
-TimeHysteresis HysteState(false, 15000, 1000, 1200.0f, TimeStateChangeNotifier);
+TimeHysteresis HysteState(false, 150, 100, 244.0f, TimeStateChangeNotifier);
 
 AprroxTimer ReportFrameRate(10000); // every 10 seconds
 uint16_t FrameCount = 0;
 long startTime = 0, endTime = 0;
 double RMS_S = 0;
-unsigned long LoopCount = 0;
 
 void loop()
 {
-  unsigned int timeStamp = millis(); 
-  ++LoopCount;
+  unsigned int timeStamp = millis();
   
   // Update the led on the teensy
   blinker.update(timeStamp);
@@ -235,7 +240,7 @@ void loop()
     RMS_S += rms;
     if( HysteState.test(rms,timeStamp) )
     {
-      //updateEqualizer();
+      updateEqualizer();
     }
     else
     {
@@ -258,19 +263,12 @@ void loop()
       Serial.print(" fps ");
       
       Serial.print("  Proc On: ");
-      Serial.print((endTime - startTime)/((double)SecondCount*1000));
-      
-      //Serial.print("%, off: ");
-      //Serial.print((startTime - endTime)/((double)SecondCount*1000));
+      Serial.print((endTime - startTime)/((double)SecondCount*1000)*100);
       
       Serial.print("% ");
       
       Serial.print("Avg RMS: ");
       Serial.print( RMS_S/((double)FrameCount) );
-      
-      Serial.print(" hit: ");
-      Serial.print( FrameCount/((double)LoopCount) );
-      Serial.print(" %");
       
       Serial.println();
       
@@ -279,7 +277,6 @@ void loop()
       startTime = 0;
       endTime = 0;
       RMS_S = 0;
-      LoopCount = 0;
       ReportFrameRate.reset(timeStamp);
     }
     else
@@ -339,6 +336,7 @@ void updateEqualizer()
   {
     EqualizerBuffer.data[index].X = index;
     EqualizerBuffer.data[index].Y = myFFT.output[index];
+    EqualizerBuffer.data[index].C = HSV_Colors[index];
   }
   EqualizerBuffer.size = 128;
   

@@ -6,9 +6,15 @@
 class RemapDecibel : public RemapBase
 {
  public:
- 
+  RemapDecibel(MatrixSize size);
   void remap(DataBuffer &data);
   
+  void lockVert(double scale) { scaleY = scale; }
+  
+ private:
+  double scaleY;
+  double tempYBuffer[128];
+  uint16_t height;
 };
 
 #endif

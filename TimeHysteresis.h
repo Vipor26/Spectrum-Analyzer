@@ -10,6 +10,7 @@ class TimeHysteresis
     falseTime(FalseTime),
     threshold(Threshold),
     sum(0),
+    dir(0),
     notifiedStateChange(NotifiedStateChange),
     lastTime(millis())
   {  }
@@ -18,36 +19,68 @@ class TimeHysteresis
   {
     bool testState = (value >= threshold);
     
-    unsigned long deltaTime = time - lastTime;
+    int deltaTime = time - lastTime;
     lastTime = time;
+    
+    if(testState)
+    {
+      sum += deltaTime;
+    }
+    else
+    {
+      sum -= deltaTime;
+    }
+    
+    /*
+    if(dir==0)
+    {
+      if(testState)
+        dir=1;
+       else  {
+        dir=-1;
+       }
+    }
     
     // if currently true but false was the result of test
     if(       state && !testState)
     {
-      sum -= deltaTime;
+      dir = -1;
     }
     // if currently false but true was the result of test
     else if( !state && testState )
     {
-      sum += deltaTime;
-    }
-    else // they agree
-    {
-      return state;
-    }
+      dir = 1;
+    sum += (deltaTime*dir);
+      Serial.print(dir);
+      Serial.println();
+    }*/
+    
+    
+    
+    //else // they agree
+    //{
+    //  return state;
+    //}
     
     if(        sum > trueTime)
     {
       sum = 0;
+      if(state == true)  {
+        return true;
+      }
+      
       state = true;
       if(notifiedStateChange != NULL)
       {
         notifiedStateChange(true);
       }
     }
-    else if(-1*sum > falseTime)
+    else if(-1*sum > ((int)falseTime))
     {
       sum = 0;
+      if(state == false)  {
+        return false;
+      }
       state = false;
       if(notifiedStateChange != NULL)
       {
@@ -63,7 +96,8 @@ class TimeHysteresis
   unsigned int trueTime, falseTime;
   double threshold;
   unsigned long lastTime;
-  long sum;
+  int sum;
+  int dir;
   bool state;
 };
 

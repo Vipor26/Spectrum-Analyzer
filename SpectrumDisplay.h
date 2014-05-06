@@ -12,13 +12,13 @@ class SpectrumDisplay
  public:
  
   //template<typename DerivcedType>
-  void registerRemappers( ArraySharedPtr<RemapBase> Remappers)
+  void registerRemappers( const ArraySharedPtr<RemapBase> &Remappers)
   {
     // void deepCopy( const ArraySharedPtr<BDT> &to, const ArraySharedPtr<BDT> &from)
     m_remappers = Remappers;
   }
   
-  void registerDisplayers( ArraySharedPtr<DisplayBase> Displayers)
+  void registerDisplayers( const ArraySharedPtr<DisplayBase> &Displayers)
   {
     // void deepCopy( const ArraySharedPtr<BDT> &to, const ArraySharedPtr<BDT> &from)
     m_displayers = Displayers;
@@ -27,7 +27,6 @@ class SpectrumDisplay
   void display(DataBuffer &data, SmartMatrix *matrix);
   
  private:
-  // I know this is weird but it should look clean in the end
   ArraySharedPtr< RemapBase > m_remappers;
   ArraySharedPtr<DisplayBase> m_displayers;
 };

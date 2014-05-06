@@ -4,7 +4,7 @@
 
 #include <SmartMatrix.h>
 
-static const rgb24 PROGMEM Colors[] = {
+static const rgb24 PROGMEM HSV_Colors[] = {
   {0xff, 0x0, 0x0},
   {0xff, 0xc, 0x0},
   {0xff, 0x18, 0x0},

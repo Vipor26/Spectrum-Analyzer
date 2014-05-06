@@ -15,6 +15,7 @@ void SpectrumDisplay::display(DataBuffer &data, SmartMatrix *matrix)
   matrix->fillScreen({0x00,0x00,0x00});
   matrix->setRotation(rotation180);
   
+  size = m_displayers.size();
   for(index=0; index<size; ++index)
   {
     m_displayers[index]->display(data, matrix);

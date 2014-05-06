@@ -4,27 +4,12 @@
 #ifndef REMAP_BASE
 #define REMAP_BASE
 
-#include "arduino.h"
+#include "BasicStructures.h"
 #include "SmartMatrix.h"
-
-struct Data
-{
-  uint16_t X;
-  uint16_t Y;
-  rgb24 C;
-};
-
-
-struct DataBuffer
-{
-  Data data[128];
-  uint8_t size;
-};
 
 class RemapBase
 {
  public:
-  //virtual RemapBase( const RemapBase& ) {} ??
   virtual ~RemapBase() {}
   
   virtual void remap(DataBuffer &data) = 0;

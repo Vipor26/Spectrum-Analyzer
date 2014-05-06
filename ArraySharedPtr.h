@@ -24,28 +24,34 @@ class ArraySharedPtr
   
   bool initalize(size_t size)
   {
-    if(data != 0)
+    if(data != NULL)
     {
+      // If there needs more size
       if( size > m_maxSize )
       {
-        clear();
+        delete[] data;
+        m_maxSize = 0;
+        m_size = 0;
         data = new std::shared_ptr<DT>[size]; //std::nothrow?
         if(data == NULL)
         {
           return false;
         }
-        m_maxSize = size;    
+        m_maxSize = size;
       }
     }
     else
     {
+      // Initalize to size
       data = new std::shared_ptr<DT>[size];
       if(data == NULL)
       {
         return false;
       }
-      m_maxSize = size;   
+      m_maxSize = size;
     }
+    
+    //Set the current requested size
     m_size = size;
     return true;
   }
@@ -72,16 +78,17 @@ class ArraySharedPtr
   
   void copy(const ArraySharedPtr &rhs)
   {
-    initalize(rhs.m_maxSize); //initlaize will handle if clear needs to be called
-    
-    for(uint16_t index=0; index<rhs.m_size; ++index)
+    if( !initalize( rhs.m_maxSize ) ) //initlaize will handle if clear needs to be called
     {
-        data[index] = rhs.data[index];
+      Serial.println("Copy Constructor inistalization failed");
     }
     
     m_size = rhs.m_size;
+    for(uint16_t index=0; index<m_size; ++index)
+    {
+        data[ index ] = rhs.data[ index ];
+    }
   }
-  
   
   ArraySharedPtr& operator=(const ArraySharedPtr &rhs)
   {
@@ -115,12 +122,6 @@ class ArraySharedPtr
     return data[index];
   }
   
-  // get a read only refrence to the data in shared_ptr
-  const DT& operator[](uint16_t index) const
-  {
-    return *(data[index]);
-  }
-  
  private:
   std::shared_ptr<DT> *data;
   uint16_t m_size, m_maxSize;
@@ -130,7 +131,9 @@ class ArraySharedPtr
 template<typename BDT, typename DDT>
 void deepCopy( const ArraySharedPtr<BDT> &to, const ArraySharedPtr<BDT> &from)
 {
-  to.initalize(from.maxSize());
+  if( to.initalize(from.maxSize()) )  {
+    Serial.println("Deep Copy initalization failed");
+  }
   uint16_t index, size;
   std::shared_ptr<BDT> fromData;
   std::shared_ptr<DDT> toData;
