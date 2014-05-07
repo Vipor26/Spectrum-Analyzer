@@ -1,6 +1,13 @@
 ReadMe File for Spectrum Analyzer, this project was built upon a teensy 3.1 and a 16x32 or a 32x32 RGB display (maybe more configurations will be supported).
 These displays are color !!!
 
+Please note that the following files were writen by Paul Stoffregen
+ - Files
+   - Time.h
+   - Time.cpp
+   - DateString.cpp
+ - http://www.pjrc.com/teensy/td_libs_Time.html
+
 
 This code relies on both the Teensy Audio and SmartMatrix Libararies.
  - Audio https://github.com/PaulStoffregen/Audio
