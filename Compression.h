@@ -8,7 +8,7 @@ class Compression
  public:
   enum Type
   {
-    Average,
+    Avg,
     All,
     Max
   };

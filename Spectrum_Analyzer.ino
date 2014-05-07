@@ -80,10 +80,14 @@ AudioConnection Connection(audioInput, myFFT);
 //---- Time & Display ----
 uint8_t CurrentClock = 1;
 ArraySharedPtr<ClockBase> Clocks;
+//TODO change this into a list of function pointers that return a shared_ptr
+// so that only the current clocks display is instatiated
 
 //---- Equalizer Display
 uint8_t CurrentEqualizer = 0;
 ArraySharedPtr<SpectrumDisplay> CurrentEqualizerScreen;
+//TODO change this into a list of function pointers that return a shared_ptr
+// so that only the current specrum display is instatiated
 
 // ---- Status Led ----;
 BlinkPatternManager blinker({1000,1000,100,500},13);
@@ -169,20 +173,22 @@ void setup()
   ArraySharedPtr< DisplayBase > tempDisplayers;
   
   
+  // Compression - Avg, All, Max
+  
   Serial.println("    Data Remappers ...");
   // ---- Set up equalizer (this is the basic verision ----
-  tempRemappers.initalize( 3 );
+  tempRemappers.initalize( 2 );
   Serial.println("      Octave ...");
-  tempRemappers[0] = std::make_shared<RemapOctave>( matrix.getScreenWidth(), Compression::All );
+  tempRemappers[0] = std::make_shared<RemapOctave>( matrix.getScreenWidth(), Compression::Max );
   Serial.println("      - done");
   Serial.println("      Decimal ...");
   tempRemappers[1] = std::make_shared<RemapDecibel>(matrixSize);
   Serial.println("      - done");
-  Serial.println("      Linear ...");
-  tempRemappers[2] = std::make_shared< RemapLinear >( RemapLinear::ScaleX,
-                                                      matrixSize,
-                                                      Compression::All          );
-  Serial.println("      - done");
+  //Serial.println("      Linear ...");
+  //tempRemappers[2] = std::make_shared< RemapLinear >( RemapLinear::ScaleX,
+  //                                                    matrixSize,
+  //                                                    Compression::All          );
+  //Serial.println("      - done");
   Serial.println("      Uploading and clearing temp");  
   CurrentEqualizerScreen[0]->registerRemappers(tempRemappers);
   tempRemappers.clear();
@@ -331,6 +337,7 @@ void updateEqualizer()
   if( CurrentEqualizer >= CurrentEqualizerScreen.size() ) return;
   if( CurrentEqualizerScreen[CurrentEqualizer] == NULL) return;
   
+  // Copy the data from teh FTT buffer to the display buffer
   uint8_t index;
   for(index=0; index<128; ++index)
   {
@@ -339,7 +346,8 @@ void updateEqualizer()
     EqualizerBuffer.data[index].C = HSV_Colors[index];
   }
   EqualizerBuffer.size = 128;
-  
+
+  // Call the current equalizer  
   CurrentEqualizerScreen[CurrentEqualizer]->display(EqualizerBuffer,&matrix);
 }
 

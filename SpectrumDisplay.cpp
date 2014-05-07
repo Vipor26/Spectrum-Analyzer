@@ -8,17 +8,21 @@ void SpectrumDisplay::display(DataBuffer &data, SmartMatrix *matrix)
   size = m_remappers.size();
   for(index=0; index<size; ++index)
   {
-    m_remappers[index]->remap(data);
+    if(m_remappers[index] != NULL)  {
+      m_remappers[index]->remap(data);
+    }
   }
   
   //generate display data
   matrix->fillScreen({0x00,0x00,0x00});
-  matrix->setRotation(rotation180);
+  matrix->setRotation(rotation0);
   
   size = m_displayers.size();
   for(index=0; index<size; ++index)
   {
-    m_displayers[index]->display(data, matrix);
+    if(m_displayers[index] != NULL)  {
+      m_displayers[index]->display(data, matrix);
+    }
   }
   
   matrix->swapBuffers(true);

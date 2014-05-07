@@ -22,9 +22,6 @@ void ClockBasic::display(SmartMatrix *matrix)
                                3,
                                {0xFF,0x00,0xFF},
                                {0x00,0x00,0x00}            );
-    
-    //matrix->drawFastVLine(15,1,matrix->getScreenHeight()-1,{0xFF,0x00,0xFF});
-    //matrix->drawFastVLine(16,1,matrix->getScreenHeight()-1,{0xFF,0x00,0xFF});
       
     matrix->drawFastVLine(15,5,6,{0xEF,0xCF,0xEF});
     matrix->drawFastVLine(16,5,6,{0xEF,0xCF,0xEF});

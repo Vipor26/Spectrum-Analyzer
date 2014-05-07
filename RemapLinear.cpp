@@ -49,6 +49,7 @@ void RemapLinear::rescaleX(DataBuffer &data)
   }
   else
   {
+    // Calculate Scale
     uint16_t max = 0, temp;
     for(index=0; index<data.size; ++index)
     {
@@ -59,6 +60,7 @@ void RemapLinear::rescaleX(DataBuffer &data)
     }
     scale = ((double)(screenSize.width))/max;
   }
+  
   
   for(index=0; index<data.size; ++index)
   {

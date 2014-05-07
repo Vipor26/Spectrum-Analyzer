@@ -8,7 +8,7 @@ void Compression::applyComp( const uint8_t &start,
 {
    switch(m_type)
     {
-      case Average: useAverage(start, stop, where, data); break;
+      case Avg: useAverage(start, stop, where, data); break;
       case All:         useAll(start, stop, where, data); break;
       case Max:         useMax(start, stop, where, data); break;
     }
