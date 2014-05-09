@@ -216,13 +216,13 @@ void setup()
   // double Gravity, double TimeScale, uint16_t hold):
   const double GravitySec = 0.1; //= d/s^2
   const uint16_t holdSec = 2;
-  const uint8_t decayFade = 1;
+  const uint8_t decayFade = 2;
   const double TimeScale = 1.0/60.0;  // the 1/60 const comes from an aproximant framerate
 
   const uint16_t hold = (uint16_t)(holdSec/TimeScale);
   const double gravity = GravitySec*TimeScale*TimeScale;
   decayFunction[0] = std::make_shared<DecayGravity>(gravity, TimeScale, hold);
-  delayFucntion[1] = std::make_shared<DecayFade>(decayFade);
+  decayFunction[1] = std::make_shared<DecayFade>(decayFade);
   tempDisplayMaxDecayPtr->setDecayFunction( decayFunction );
   
   tempDisplayers[0] = tempDisplayMaxDecayPtr;

@@ -58,7 +58,7 @@ void DisplayMaxDecay::display(DataBuffer &data, SmartMatrix *matrix)
     if(data.data[index].Y > m_MaxBuffer.data[index].Y)
     {
       m_MaxBuffer.data[index] = data.data[index];
-      m_MaxBuffer.data[index].C = {255,255,255};
+      //m_MaxBuffer.data[index].C = {255,255,255};
       m_time[index] = 0;
     }
     else  {
@@ -71,14 +71,14 @@ void DisplayMaxDecay::display(DataBuffer &data, SmartMatrix *matrix)
   
   //Third and finally display
   h = matrix->getScreenHeight();
-  for( index=0; index<dataSize; ++index)
-  {
-    x = data.data[index].X;
-    y = data.data[index].Y;
+  //for( index=0; index<dataSize; ++index)
+  //{
+  //  x = data.data[index].X;
+  //  y = data.data[index].Y;
     
     // in range chack is already done by the matrix display
-    matrix->drawPixel(x,h-y-1,data.data[index].C);
-  }
+  //  matrix->drawPixel(x,h-y-1,data.data[index].C);
+  //}
   
   //dataSize = m_MaxBuffer.size;
   for( index=0; index<dataSize; ++index)
