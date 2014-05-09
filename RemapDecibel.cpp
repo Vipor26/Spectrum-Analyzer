@@ -1,5 +1,6 @@
 #include "Remapdecibel.h"
 
+#include <limits>
 
 RemapDecibel::RemapDecibel(MatrixSize size) : height(size.height), scaleY(0.0)
 {  }
@@ -24,7 +25,10 @@ void RemapDecibel::remap(DataBuffer &data)
   
   for(index=0; index<size; ++index)
   {
-    temp = log((double)(data.data[index].Y) + 1.0);
+    //temp = ((double)(data.data[index].Y));//std::numeric_limits<uint16_t>::max();
+    //temp += std::numeric_limits<double>::epsilon();
+    //temp = 20*log10(temp);
+    temp = 20*log10((double)(data.data[index].Y) + 1.0);
     
     tempYBuffer[index] = temp;
     

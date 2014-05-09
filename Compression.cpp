@@ -9,8 +9,9 @@ void Compression::applyComp( const uint8_t &start,
    switch(m_type)
     {
       case Avg: useAverage(start, stop, where, data); break;
-      case All:         useAll(start, stop, where, data); break;
-      case Max:         useMax(start, stop, where, data); break;
+      case All:     useAll(start, stop, where, data); break;
+      case Max:     useMax(start, stop, where, data); break;
+      case None: break;
     }
 }
 
@@ -74,4 +75,45 @@ void Compression::useMax( const uint8_t &start,
   data.data[where].X = where;
   data.data[where].Y = max;
   data.data[where].C = maxcolor;
+}
+
+
+void Compression::searchComp( DataBuffer &data )
+{
+  uint16_t index, start, end, where, CurrentX, tempX;
+  
+  start = 0;
+  end = 0;
+  where = 0;
+  CurrentX = data.data[0].X;
+  for(index=0; index<data.size; ++index)
+  {
+    tempX = data.data[index].X;
+    if(CurrentX == tempX) {
+      continue;
+    }
+    end = index-1;
+    // if this fails then an end was found
+    // index-1
+    
+    //Combiner
+    applyComp(start,
+              end,
+              where,
+              data  ); 
+    start = index;
+    ++where;
+    CurrentX = tempX;
+  }
+  end = data.size-1;
+  if(end > start)
+  {
+    //Combiner
+    applyComp(start,
+              end,
+              where,
+              data  ); 
+  }
+  data.size = where + 1; // is this correct ??
+  //ERROR data.size not set !!!
 }

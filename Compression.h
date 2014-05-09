@@ -10,14 +10,15 @@ class Compression
   {
     Avg,
     All,
-    Max
+    Max,
+    None
   };
   
-  enum WhichType
-  {
-    X,
-    Y,
-  };
+  //enum WhichType
+  //{
+  //  X,
+  //  Y,
+  //};
   
   Compression(Type type) : m_type(type)
   {  }
@@ -30,6 +31,10 @@ class Compression
                   const uint8_t &stop,
                   const uint8_t &where,
                   DataBuffer &data     );
+   
+  void searchComp( DataBuffer &data );
+   
+ Type getType() const { return m_type; }
    
  private:
    Type m_type; 

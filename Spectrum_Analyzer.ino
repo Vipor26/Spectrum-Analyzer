@@ -47,7 +47,10 @@
 //    diffrent affects that can be placed on top of eachother.
 #include "DisplayBase.h" // Base Class
 #include "DisplayRaw.h"  // Just display what is viewable in the array nothing fancy.
+
+#include "DecayClasses.h"
 #include "DisplayMaxDecay.h"   //Shows the max Y in a column and decays it in some way.
+
 #define PERSISTANT_BUFFER_SIZE 4 //Defines the number of pixels to save per column in the DispayPersistant class.
 #include "DisplayPersistant.h" //Shows a history of pixels that are decaying in some way.
 
@@ -60,6 +63,9 @@
 // System includes
 #include "ArraySharedPtr.h"
 
+
+#include <memory>
+using std::shared_ptr;
 // ######################## System Defines ########################
 // 3 dec doubling in energy 1 is lowest
 // every octive is a doubling in frequency
@@ -182,12 +188,14 @@ void setup()
   tempRemappers[0] = std::make_shared<RemapOctave>( matrix.getScreenWidth(), Compression::Max );
   Serial.println("      - done");
   Serial.println("      Decimal ...");
-  tempRemappers[1] = std::make_shared<RemapDecibel>(matrixSize);
+  shared_ptr<RemapDecibel> TempDecimalptr = std::make_shared<RemapDecibel>(matrixSize);
+  TempDecimalptr->lockVert(0.15f);
+  tempRemappers[1] = TempDecimalptr;
   Serial.println("      - done");
   //Serial.println("      Linear ...");
-  //tempRemappers[2] = std::make_shared< RemapLinear >( RemapLinear::ScaleX,
+  //tempRemappers[2] = std::make_shared< RemapLinear >( RemapLinear::ScaleY,
   //                                                    matrixSize,
-  //                                                    Compression::All          );
+  //                                                    Compression::None          );
   //Serial.println("      - done");
   Serial.println("      Uploading and clearing temp");  
   CurrentEqualizerScreen[0]->registerRemappers(tempRemappers);
@@ -198,7 +206,27 @@ void setup()
   Serial.println("    Data renders ...");
   tempDisplayers.initalize(1);
   Serial.println("      Basic render ...");
-  tempDisplayers[0] = std::make_shared<DisplayRaw>();
+  //tempDisplayers[0] = std::make_shared<DisplayRaw>();
+  
+  shared_ptr<DisplayMaxDecay> tempDisplayMaxDecayPtr = std::make_shared<DisplayMaxDecay>();
+  
+  ArraySharedPtr<DecayFunciton> decayFunction;
+  decayFunction.initalize(2);
+  
+  // double Gravity, double TimeScale, uint16_t hold):
+  const double GravitySec = 0.1; //= d/s^2
+  const uint16_t holdSec = 2;
+  const uint8_t decayFade = 1;
+  const double TimeScale = 1.0/60.0;  // the 1/60 const comes from an aproximant framerate
+
+  const uint16_t hold = (uint16_t)(holdSec/TimeScale);
+  const double gravity = GravitySec*TimeScale*TimeScale;
+  decayFunction[0] = std::make_shared<DecayGravity>(gravity, TimeScale, hold);
+  delayFucntion[1] = std::make_shared<DecayFade>(decayFade);
+  tempDisplayMaxDecayPtr->setDecayFunction( decayFunction );
+  
+  tempDisplayers[0] = tempDisplayMaxDecayPtr;
+  
   Serial.println("      - done");
   Serial.println("      Uploading and clearing temp");  
   CurrentEqualizerScreen[0]->registerDisplayers(tempDisplayers);

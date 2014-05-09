@@ -148,10 +148,15 @@ void RemapOctave::remap(DataBuffer &data)
   if( (m_dataptr == NULL) || (m_size == 0) ) return;
   
   uint8_t indexTo;
-  
+
   for(indexTo=0; indexTo<m_size; indexTo+=2)
   {
     applyComp(m_dataptr[ indexTo ], m_dataptr[ indexTo + 1 ], indexTo/2, data);
   }
-  data.size = m_size;
+  
+  switch(getType())
+  {
+    case All: case None: break;
+    case Max: case Avg: data.size = m_size/2; break;
+  }
 }
