@@ -49,7 +49,7 @@
 #include "DisplayRaw.h"  // Just display what is viewable in the array nothing fancy.
 
 #include "DecayClasses.h"
-#include "DisplayMaxDecay.h"   //Shows the max Y in a column and decays it in some way.
+#include "DisplayLimitDecay.h"   //Shows the max Y in a column and decays it in some way.
 
 #define PERSISTANT_BUFFER_SIZE 4 //Defines the number of pixels to save per column in the DispayPersistant class.
 #include "DisplayPersistant.h" //Shows a history of pixels that are decaying in some way.
@@ -204,11 +204,16 @@ void setup()
   Serial.println();
   
   Serial.println("    Data renders ...");
-  tempDisplayers.initalize(1);
+  tempDisplayers.initalize(2);
   Serial.println("      Basic render ...");
   //tempDisplayers[0] = std::make_shared<DisplayRaw>();
   
-  shared_ptr<DisplayMaxDecay> tempDisplayMaxDecayPtr = std::make_shared<DisplayMaxDecay>();
+  
+  tempDisplayers[0] = std::make_shared<DisplayRaw>();
+  
+  shared_ptr<DisplayLimitDecay> tempDisplayMaxDecayPtr;
+ 
+  tempDisplayMaxDecayPtr = std::make_shared<DisplayLimitDecay>(DisplayLimitDecay::Max);
   
   ArraySharedPtr<DecayFunciton> decayFunction;
   decayFunction.initalize(2);
@@ -221,11 +226,13 @@ void setup()
 
   const uint16_t hold = (uint16_t)(holdSec/TimeScale);
   const double gravity = GravitySec*TimeScale*TimeScale;
+  
+  
   decayFunction[0] = std::make_shared<DecayGravity>(gravity, TimeScale, hold);
   decayFunction[1] = std::make_shared<DecayFade>(decayFade);
   tempDisplayMaxDecayPtr->setDecayFunction( decayFunction );
   
-  tempDisplayers[0] = tempDisplayMaxDecayPtr;
+  tempDisplayers[1] = tempDisplayMaxDecayPtr;
   
   Serial.println("      - done");
   Serial.println("      Uploading and clearing temp");  

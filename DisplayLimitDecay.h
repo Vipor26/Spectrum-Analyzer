@@ -6,24 +6,31 @@
 #include "ArraySharedPtr.h"
 #include "Compression.h"
 
-class DisplayMaxDecay : public DisplayBase
+#include <limits>
+
+class DisplayLimitDecay : public DisplayBase
 {
  public:
-  
+  enum Type
+  {
+    Max,
+    Min
+  };
   // TODO Define Max Y, X, direction?
   
-  DisplayMaxDecay();
-  DisplayMaxDecay(const DisplayMaxDecay &rhs);
-  ~DisplayMaxDecay();
+  DisplayLimitDecay(Type type = Max);
+  DisplayLimitDecay(const DisplayLimitDecay &rhs);
+  ~DisplayLimitDecay();
   
   void setDecayFunction(const ArraySharedPtr<DecayFunciton> &array);
   
   void display(DataBuffer &data, SmartMatrix *matrix);
 
  private:
-  DataBuffer m_MaxBuffer;
+  DataBuffer m_LimitBuffer;
   uint16_t m_time[128];
   ArraySharedPtr<DecayFunciton> m_decayfunctionArray;
+  Type m_type;
 };
 
 #endif // DISPLAY_MAX_DECAY_H
