@@ -20,7 +20,11 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
+ 
+ #ifndef CIRCULAR_BUFFER_H
+ #define CIRCULAR_BUFFER_H
+ 
+ 
 template <typename DT, unsigned int BUFFER_SIZE>
 class CircularBuffer
 {
@@ -33,6 +37,7 @@ class CircularBuffer
 	void pop(const DT *data);
 	
 	void clear();
+        void dropFrom(unsigned int index); // drop the current index to end
 	void dropLast(unsigned int elements);
 	
 	unsigned int size() const;
@@ -109,6 +114,13 @@ void CircularBuffer<DT,BUFFER_SIZE>::clear()
 }
 
 template<typename DT, unsigned int BUFFER_SIZE>
+void CircularBuffer<DT,BUFFER_SIZE>::dropFrom(unsigned int index)
+{
+  // drap the current index to the end
+  m_size = index;
+}
+
+template<typename DT, unsigned int BUFFER_SIZE>
 void CircularBuffer<DT,BUFFER_SIZE>::dropLast(unsigned int elements)
 {
 	if( elements > m_size )	{
@@ -140,3 +152,6 @@ bool CircularBuffer<DT,BUFFER_SIZE>::isEmpty() const
 {
 	return (m_size == 0);
 }
+
+
+#endif // CIRCULAR_BUFFER_H

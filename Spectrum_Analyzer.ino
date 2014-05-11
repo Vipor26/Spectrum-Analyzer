@@ -51,7 +51,6 @@
 #include "DecayClasses.h"
 #include "DisplayLimitDecay.h"   //Shows the max Y in a column and decays it in some way.
 
-#define PERSISTANT_BUFFER_SIZE 4 //Defines the number of pixels to save per column in the DispayPersistant class.
 #include "DisplayPersistant.h" //Shows a history of pixels that are decaying in some way.
 
 #include "SpectrumDisplay.h" // Class to mannage a equalizer screen, or setup.
@@ -72,13 +71,26 @@ using std::shared_ptr;
 
 //---- Display ----
 SmartMatrix matrix;
-const int INT_SCREEN_DELAY = 1000;
+const int INT_SCREEN_DELAY = 500/3;
 const int DefaultBrightness = 25*(255/100);
 const rgb24 BLACK = {0,0,0};
 
 
 //---- Audio  ----
-AudioAnalyzeFFT256  myFFT(4,0);//(10); 5
+/*
+  AudioWindowHanning256
+  AudioWindowBartlett256
+  AudioWindowBlackman256
+  AudioWindowFlattop256
+  AudioWindowBlackmanHarris256
+  AudioWindowNuttall256
+  AudioWindowBlackmanNuttall256
+  AudioWindowWelch256
+  AudioWindowHamming256
+  AudioWindowCosine256
+  AudioWindowTukey256
+*/
+AudioAnalyzeFFT256  myFFT(4,0);//(10); 4
 AudioInputAnalog   audioInput(17,DEFAULT);  // Pin 17 = A3, Default = 0-3.3v
 
 AudioConnection Connection(audioInput, myFFT);
@@ -98,6 +110,118 @@ ArraySharedPtr<SpectrumDisplay> CurrentEqualizerScreen;
 // ---- Status Led ----;
 BlinkPatternManager blinker({1000,1000,100,500},13);
 // Pattern on pin 13 - off(1s), on(1s), off(0.1), on(0,5)
+
+std::shared_ptr<SpectrumDisplay> generateMaxDisplay(const MatrixSize &matrixSize)
+{
+  std::shared_ptr<SpectrumDisplay> specDisp = std::make_shared<SpectrumDisplay>();
+  ArraySharedPtr<  RemapBase  > tempRemappers;
+  ArraySharedPtr< DisplayBase > tempDisplayers;
+  
+  
+  // Compression - Avg, All, Max
+  
+  Serial.println("    Data Remappers ...");
+  // ---- Set up equalizer (this is the basic verision ----
+  tempRemappers.initalize( 2 );
+  Serial.println("      Octave ...");
+  tempRemappers[0] = std::make_shared<RemapOctave>( matrix.getScreenWidth(), Compression::Max );
+  Serial.println("      - done");
+  Serial.println("      Decimal ...");
+  shared_ptr<RemapDecibel> TempDecimalptr = std::make_shared<RemapDecibel>(matrixSize);
+  TempDecimalptr->lockVert(0.2f);
+  tempRemappers[1] = TempDecimalptr;
+  Serial.println("      - done");
+  //Serial.println("      Linear ...");
+  //tempRemappers[2] = std::make_shared< RemapLinear >( RemapLinear::ScaleY,
+  //                                                    matrixSize,
+  //                                                    Compression::None          );
+  //Serial.println("      - done");
+  Serial.println();
+  
+  Serial.println("    Data renders ...");
+  tempDisplayers.initalize(2);
+  Serial.println("      Basic render ...");
+  
+  tempDisplayers[0] = std::make_shared<DisplayRaw>();
+  
+  shared_ptr<DisplayLimitDecay> tempDisplayMaxDecayPtr;
+ 
+  tempDisplayMaxDecayPtr = std::make_shared<DisplayLimitDecay>(DisplayLimitDecay::Max);
+  
+  ArraySharedPtr<DecayFunciton> decayFunction;
+  decayFunction.initalize(2);
+  
+  // double Gravity, double TimeScale, uint16_t hold):
+  const double GravitySec = 0.1; //= d/s^2
+  const double holdSec = 0.5;
+  const uint8_t decayFade = 2;
+  const double TimeScale = 1.0/60.0;  // the 1/60 const comes from an aproximant framerate
+
+  const uint16_t hold = (uint16_t)(holdSec/TimeScale);
+  const double gravity = GravitySec*TimeScale*TimeScale;
+  
+  
+  decayFunction[0] = std::make_shared<DecayGravity>(gravity, TimeScale, hold);
+  decayFunction[1] = std::make_shared<DecayFade>(decayFade);
+  tempDisplayMaxDecayPtr->setDecayFunction( decayFunction );
+  
+  tempDisplayers[1] = tempDisplayMaxDecayPtr;
+  
+  
+  Serial.println("      Registering Setup");  
+  specDisp->registerRemappers(tempRemappers);
+  specDisp->registerDisplayers(tempDisplayers);
+  tempRemappers.clear();
+  Serial.println("    - done");
+  Serial.println();
+  
+  return specDisp;
+}
+
+std::shared_ptr<SpectrumDisplay> generatePersistantDisplay(const MatrixSize &matrixSize)
+{
+  std::shared_ptr<SpectrumDisplay> specDisp = std::make_shared<SpectrumDisplay>();
+  ArraySharedPtr<  RemapBase  > tempRemappers;
+  ArraySharedPtr< DisplayBase > tempDisplayers;
+  ArraySharedPtr<DecayFunciton> decayFunction;
+  
+  shared_ptr<RemapDecibel> tempDecimalptr;
+  shared_ptr<DisplayPersistant> tempDisplayDecayPtr;
+  
+  // double Gravity, double TimeScale, uint16_t hold):
+  const double GravitySec = 1; //= d/s^2
+  const double holdSec = 0;
+  const uint8_t decayFade = 5;
+  const double TimeScale = 1.0/60.0;  // the 1/60 const comes from an aproximant framerate
+
+  const uint16_t hold = (uint16_t)(holdSec/TimeScale);
+  const double gravity = GravitySec*TimeScale*TimeScale;
+  
+  
+  // Initalize data remappers
+  tempRemappers.initalize( 2 );
+  tempRemappers[0] = std::make_shared<RemapOctave>( matrix.getScreenWidth(), Compression::Avg );
+  
+  tempDecimalptr = std::make_shared<RemapDecibel>(matrixSize);
+  tempDecimalptr->lockVert(0.15f);
+  tempRemappers[1] = tempDecimalptr;
+  
+  // Initalize how the draw function moves the buffered data;
+  decayFunction.initalize(1);
+  decayFunction[0] = std::make_shared<DecayGravity>(gravity, TimeScale, hold);
+  //decayFunction[1] = std::make_shared<DecayFade>(decayFade);
+  
+  // Intalize renders
+  tempDisplayers.initalize(1);
+  tempDisplayDecayPtr = std::make_shared<DisplayPersistant>();
+  tempDisplayDecayPtr->setDecayFunction( decayFunction );
+  tempDisplayers[0] = tempDisplayDecayPtr;
+  
+  
+  specDisp->registerRemappers(tempRemappers);
+  specDisp->registerDisplayers(tempDisplayers);
+  return specDisp;
+}
 
 //  ######################## System set up ########################
 void setup()
@@ -169,77 +293,12 @@ void setup()
   Serial.println();
   
   Serial.println("  Working on equalizer 1 ...");
-  Serial.println("    Helper ...");
   // ---- Set up scence builder ----
   CurrentEqualizerScreen.initalize(1);
-  CurrentEqualizerScreen[0] = std::make_shared<SpectrumDisplay>();
-  Serial.println("    - done");
+  //CurrentEqualizerScreen[0] = generatePersistantDisplay(matrixSize);
+  CurrentEqualizerScreen[0] = generateMaxDisplay(matrixSize);
+  Serial.println("  - done");
   
-  ArraySharedPtr<  RemapBase  > tempRemappers;
-  ArraySharedPtr< DisplayBase > tempDisplayers;
-  
-  
-  // Compression - Avg, All, Max
-  
-  Serial.println("    Data Remappers ...");
-  // ---- Set up equalizer (this is the basic verision ----
-  tempRemappers.initalize( 2 );
-  Serial.println("      Octave ...");
-  tempRemappers[0] = std::make_shared<RemapOctave>( matrix.getScreenWidth(), Compression::Max );
-  Serial.println("      - done");
-  Serial.println("      Decimal ...");
-  shared_ptr<RemapDecibel> TempDecimalptr = std::make_shared<RemapDecibel>(matrixSize);
-  TempDecimalptr->lockVert(0.15f);
-  tempRemappers[1] = TempDecimalptr;
-  Serial.println("      - done");
-  //Serial.println("      Linear ...");
-  //tempRemappers[2] = std::make_shared< RemapLinear >( RemapLinear::ScaleY,
-  //                                                    matrixSize,
-  //                                                    Compression::None          );
-  //Serial.println("      - done");
-  Serial.println("      Uploading and clearing temp");  
-  CurrentEqualizerScreen[0]->registerRemappers(tempRemappers);
-  tempRemappers.clear();
-  Serial.println("    - done");
-  Serial.println();
-  
-  Serial.println("    Data renders ...");
-  tempDisplayers.initalize(2);
-  Serial.println("      Basic render ...");
-  //tempDisplayers[0] = std::make_shared<DisplayRaw>();
-  
-  
-  tempDisplayers[0] = std::make_shared<DisplayRaw>();
-  
-  shared_ptr<DisplayLimitDecay> tempDisplayMaxDecayPtr;
- 
-  tempDisplayMaxDecayPtr = std::make_shared<DisplayLimitDecay>(DisplayLimitDecay::Max);
-  
-  ArraySharedPtr<DecayFunciton> decayFunction;
-  decayFunction.initalize(2);
-  
-  // double Gravity, double TimeScale, uint16_t hold):
-  const double GravitySec = 0.1; //= d/s^2
-  const uint16_t holdSec = 2;
-  const uint8_t decayFade = 2;
-  const double TimeScale = 1.0/60.0;  // the 1/60 const comes from an aproximant framerate
-
-  const uint16_t hold = (uint16_t)(holdSec/TimeScale);
-  const double gravity = GravitySec*TimeScale*TimeScale;
-  
-  
-  decayFunction[0] = std::make_shared<DecayGravity>(gravity, TimeScale, hold);
-  decayFunction[1] = std::make_shared<DecayFade>(decayFade);
-  tempDisplayMaxDecayPtr->setDecayFunction( decayFunction );
-  
-  tempDisplayers[1] = tempDisplayMaxDecayPtr;
-  
-  Serial.println("      - done");
-  Serial.println("      Uploading and clearing temp");  
-  CurrentEqualizerScreen[0]->registerDisplayers(tempDisplayers);
-  tempDisplayers.clear();
-  Serial.println("    - done");
-  Serial.println();
   
   Serial.println("Initalizing Complete");
 }
@@ -386,186 +445,6 @@ void updateEqualizer()
   CurrentEqualizerScreen[CurrentEqualizer]->display(EqualizerBuffer,&matrix);
 }
 
-/*
-This was the original experiment code to be removed once the completed system is up and running
-const int BinMod = 128/MATRIX_WIDTH;
 
-    //printStats();
-    displayOne();
-    //displayTwo();
-
-int8_t octiveBiasIndex[128] = {1,2,3,3,4,4,4,4,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8};
-//float  octiveBiasValue[8] = {0.125,0.25,0.5,1,2,4,8,16};
-float  octiveBiasValue[8] = {0.0625, 0.125, 0.25, 0.5, 0.375, 0.75, 1.5, 3};
-
-
-
-
-int16_t flipMatrix(const int16_t &y)
-{
-  return matrix.getScreenHeight()-y-1;
-}
-
-void displayOne()
-{
-  //const float VertScale = 2.0f;
-  const float VertScale = 0.005f;
-  int X, Y, i, bi, XT;
-  float b;
-  
-  //myFFT.output[0] =/4;
-  //myFFT.output[1] =/2;
-  
-  X = 0;
-  for (i=0; i<128; i++)
-  {
-    bi = octiveBiasIndex[i] -1;
-    b = octiveBiasValue[bi];
-    
-    // Figure out vertical of current LED
-    Y = (int)(VertScale*(myFFT.output[i]*b+1)); //log
-    
-    XT = LogRemap[i];
-    
-    matrix.drawPixel((int16_t)XT , flipMatrix(Y), Colors[(XT*8)%128]); //i
-    
-    
-    
-    if((i+1)%BinMod == 0)
-    {
-      // Increment to next column
-      X++;
-    }
-  }
-}
-   
-    */
-/*
-void displayTwo()
-{
-  const int Window = 128/32;
-  float tempMatrix[MATRIX_WIDTH];
-  int count[MATRIX_WIDTH];
-  int X, Xp, Y, i, sum;
-  
-  for(i=0; i<MATRIX_WIDTH; ++i)
-  {
-    tempMatrix[i] = 0;
-    count[i] = 0;
-  }
-  
-  float range;
-  float max, min, val;
-  
-  float verticalBase = log(2);
-  float horizonalBase = log(2);
-  
-  max = log(128);
-  min = log(1);
-  range = (max-min);
-  
-  //myFFT.output[0] = 0;
-  //myFFT.output[1] = 0;
-  
-  X = 0;
-  sum = 0;
-  for (i=0; i<128; i++)
-  {
-    //x'i = (log(xi)-log(xmin)) / (log(xmax)-log(xmin))
-    //X =  (int)(MATRIX_WIDTH*((log(i+1)-min) / (range)));
-    //X = i/BinMod;
-    X = LogRemap[i];
-    
-    tempMatrix[X] += log(myFFT.output[i]+1);
-    count[X]++;
-    
-    
-    //sum += (int)(VertScale*myFFT.output[i]);
-    
-    //if((i+1)%BinMod == 0)
-    //{
-    //  tempMatrix[X] = log( (float)sum/BinMod + 1);
-    //  
-    //  X++;
-    //  sum = 0;
-    //}
-    
-  }
-  
-  for(i=0; i<matrix.getScreenWidth(); ++i)
-  {
-    if(count[i] != 0)
-    {
-      tempMatrix[i] /= (float)(count[i]);
-    }
-  }
-  
-  max = -32767;
-  min = 32767;
-  
-  for(i=0; i<matrix.getScreenWidth(); ++i)
-  {
-    val = tempMatrix[i];
-    sum += val;
-    if(max < val)  {
-      max = val;
-    }
-    if(min > val)  {
-      min = val;
-    }
-  }
-  
-  float avg = (float)sum/matrix.getScreenWidth();
-  range = max-min;
-  Serial.print("FFT: [");
-  Serial.print(min);
-  Serial.print(", (");
-  Serial.print(avg);
-  Serial.print("), ");
-  Serial.print(max);
-  Serial.print("] ");
-  
-  int rangeLock = 15;
-  if(range < rangeLock)
-  {
-    range = rangeLock;
-  }
-  
-  Serial.print("r:");
-  Serial.print(range);
-  Serial.print(") ");
-  
-  
-  range = (float)matrix.getScreenHeight()/(range);
-  
-  for(i=0; i<MATRIX_WIDTH; ++i)
-  {
-    val = tempMatrix[i];
-    
-    //if( val < 2.0) val = min;
-    
-    val = range*(val-min);
-    
-    tempMatrix[i] = (int)val ;//- 1; // remove bar
-  }
-  
-  
-  Serial.print(" => ");
-  
-  for(i=0; i<MATRIX_WIDTH; ++i)
-  {
-    Y = tempMatrix[i];
-    
-    Serial.print(Y);
-    Serial.print(", ");
-    
-    matrix.drawPixel((int16_t)i, flipMatrix(Y), Colors[i*BinMod]);
-    if( Y > 0 )
-    {
-      //matrix.drawFastVLine((int16_t)i, 0, (int16_t)Y, Colors[i*BinMod]);
-    }
-    
-  }
-}*/
 
 

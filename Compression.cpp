@@ -33,11 +33,12 @@ void Compression::useAverage( const uint8_t &start,
     Gsum += color.green;
     Bsum += color.blue;
   }
-  data.data[where].X = where;
-  data.data[where].Y = (uint16_t)(sum/count);
   color.red   = (uint8_t)(Rsum/count);
   color.green = (uint8_t)(Gsum/count);
   color.blue  = (uint8_t)(Bsum/count);
+  data.data[where].X = where;
+  data.data[where].Y = (uint16_t)(sum/count);
+  data.data[where].C = color;
 }
                 
 void Compression::useAll( const uint8_t &start,

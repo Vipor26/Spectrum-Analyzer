@@ -77,7 +77,6 @@ void DisplayLimitDecay::display(DataBuffer &data, SmartMatrix *matrix)
         if(data.data[index].Y > m_LimitBuffer.data[index].Y)
         {
           m_LimitBuffer.data[index] = data.data[index];
-          //m_LimitBuffer.data[index].C = {255,255,255};
           m_time[index] = 0;
         }
         else  {
@@ -91,7 +90,6 @@ void DisplayLimitDecay::display(DataBuffer &data, SmartMatrix *matrix)
         if(data.data[index].Y < m_LimitBuffer.data[index].Y)
         {
           m_LimitBuffer.data[index] = data.data[index];
-          //m_LimitBuffer.data[index].C = {255,255,255};
           m_time[index] = 0;
         }
         else  {
